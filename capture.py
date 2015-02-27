@@ -16,6 +16,7 @@ SWAPPED_ORDERING_MAGIC_WITH_NS = '\xd4\x3c\xb2\xa1'
 HEADER_NATIVE_UNPACKING_STRING = 'IHHiIII'
 HEADER_SWAPPED_UNPACKING_STRING = 'IHHiIII'
 
+
 class CaptureFileGenerator(object):
     def __init__(self, io):
         self.io = io
@@ -69,6 +70,8 @@ class CaptureFile(object):
     def __iter__(self):
         return self.packets.__iter__()
 
+    def __repr__(self):
+        return '<CaptureFile - %d packets from %s to %s>' % (len(self), self[0].capture_time, self[-1].capture_time)
 
 
 class CapturedPacket(object):
@@ -84,8 +87,9 @@ class CapturedPacket(object):
         dt = datetime.fromtimestamp(self.seconds) + timedelta(microseconds=self.micro_seconds)
         return dt
 
-    def is_cutted(self):
-        return self.original_length > len(self)
+    @property
+    def is_full(self):
+        return self.original_length == len(self)
 
     def __len__(self):
         return len(self.data)
