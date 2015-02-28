@@ -10,6 +10,7 @@ from enum import Enum
 class LinkLayerHeaderTypes(Enum):
     none, ethernet = range(0, 2)
 
+MAGIC_VALUE = 0xa1b2c3d4
 
 NATIVE_ORDERING_MAGIC = '\xa1\xb2\xc3\xd4'
 NATIVE_ORDERING_MAGIC_WITH_NS = '\xa1\xb2\x3c\xd4'
@@ -125,3 +126,12 @@ def loads(io):
         except StopIteration as e:
             break
     return cap_generator.cap
+
+
+def dumps(cap):
+    assert isinstance(cap, CaptureFile)
+    major, minor = cap.version
+    time_zone = cap.time_zone.seconds / 60 / 60
+    snapshot_len = cap.max_capture_length * 2
+    structure_format = 'IHHiIII' if not cap.swapped_order else '<IHHiIII'
+    return struct.pack(structure_format, MAGIC_VALUE, major, minor, time_zone, 0, snapshot_len, cap.link_layer_type.value)
