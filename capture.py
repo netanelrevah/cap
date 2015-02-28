@@ -1,3 +1,5 @@
+import StringIO
+
 __author__ = 'netanelrevah'
 
 import struct
@@ -7,6 +9,7 @@ from enum import Enum
 
 class LinkLayerHeaderTypes(Enum):
     none, ethernet = range(0, 2)
+
 
 NATIVE_ORDERING_MAGIC = '\xa1\xb2\xc3\xd4'
 NATIVE_ORDERING_MAGIC_WITH_NS = '\xa1\xb2\x3c\xd4'
@@ -27,7 +30,9 @@ class CaptureFileGenerator(object):
         unpacked_header = None
         if header.startswith('\xD4\xC3\xB2\xA1'):
             unpacked_header = struct.unpack('IHHiIII', header)
-        self.cap = CaptureFile(*unpacked_header)
+        swapped_order = (header[0:4] == SWAPPED_ORDERING_MAGIC)
+        version = (unpacked_header[1], unpacked_header[2])
+        self.cap = CaptureFile(swapped_order, version, unpacked_header[6], unpacked_header[3], unpacked_header[5] / 2)
         self.cap.header = header
 
     def __iter__(self):
@@ -49,16 +54,20 @@ class CaptureFileGenerator(object):
 
 
 class CaptureFile(object):
-    def __init__(self, magic, version_major, version_minor, time_zone, timestamp_accuracy, max_capture_length,
-                 data_link_type):
+    def __init__(self, swapped_order, version, link_layer_type, time_zone, max_capture_length):
         self.header = None
-        self.magic = magic
-        self.version_major = version_major
-        self.version_minor = version_minor
+        self.swapped_order = True
+        self.version = (2, 4)
+
+        if not isinstance(time_zone, timedelta):
+            time_zone = timedelta(hours=time_zone)
         self.time_zone = time_zone
-        self.timestamp_accuracy = timestamp_accuracy
+
+        if not isinstance(link_layer_type, LinkLayerHeaderTypes):
+            link_layer_type = LinkLayerHeaderTypes(link_layer_type)
+        self.link_layer_type = LinkLayerHeaderTypes(link_layer_type)
+
         self.max_capture_length = max_capture_length
-        self.data_link_type = LinkLayerHeaderTypes(data_link_type)
         self.packets = []
 
     def __len__(self):
@@ -107,6 +116,8 @@ def load(path):
 
 
 def loads(io):
+    if isinstance(io, str):
+        io = StringIO.StringIO(io)
     cap_generator = CaptureFileGenerator(io)
     while True:
         try:
