@@ -101,6 +101,18 @@ class CapturedPacket(object):
     def is_full(self):
         return self.original_length == len(self)
 
+    def hex_dump(self):
+        hs = []
+        for i in xrange(len(self) / 16 + 1):
+            h = ' '.join(["{:2}".format(index) for index in xrange(i * 16, (i + 1) * 16)])
+            h += '\n'
+            h += ' '.join("{:02x}".format(ord(byte)) for byte in self.data[i * 16:(i + 1) * 16])
+            hs.append(h)
+        return '\n\n'.join(hs)
+
+    def __str__(self):
+        return ''.join("{:02x}".format(ord(byte)) for byte in self.data)
+
     def __len__(self):
         return len(self.data)
 
