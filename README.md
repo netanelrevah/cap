@@ -1,2 +1,2 @@
 # capture
-Reading and Writing .pacp files
+Reading and writing pcap files
