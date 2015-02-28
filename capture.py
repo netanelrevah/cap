@@ -102,13 +102,22 @@ class CapturedPacket(object):
         return self.original_length == len(self)
 
     def hex_dump(self):
+        max_index_len = len(str(len(self)))
+        indexes_format = "{:" + str(max_index_len) + "}: "
+
         hs = []
         for i in xrange(len(self) / 16 + 1):
-            h = ' '.join(["{:2}".format(index) for index in xrange(i * 16, (i + 1) * 16)])
-            h += '\n'
-            h += ' '.join("{:02x}".format(ord(byte)) for byte in self.data[i * 16:(i + 1) * 16])
+            first_dword = self.data[i*16: i*16+8]
+            last_dword = self.data[i*16+8: i*16+16]
+
+            h = indexes_format.format(i*16)
+            h += ' '.join("{:02x}".format(ord(byte)) for byte in first_dword)
+            if last_dword != '':
+                h += '  '
+                h += indexes_format.format(i*16+8)
+                h += ' '.join("{:02x}".format(ord(byte)) for byte in last_dword)
             hs.append(h)
-        return '\n\n'.join(hs)
+        return '\n'.join(hs)
 
     def __str__(self):
         return ''.join("{:02x}".format(ord(byte)) for byte in self.data)
