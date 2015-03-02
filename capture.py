@@ -14,7 +14,7 @@ from enum import Enum
 class LinkLayerHeaderTypes(Enum):
     none, ethernet = range(0, 2)
 
-MAGIC_VALUE = 0xa1b2c3d4
+
 
 NATIVE_ORDERING_MAGIC = '\xa1\xb2\xc3\xd4'
 NATIVE_ORDERING_MAGIC_WITH_NS = '\xa1\xb2\x3c\xd4'
@@ -56,6 +56,7 @@ class CaptureFileGenerator(object):
 
 
 class CaptureFile(object):
+    MAGIC_VALUE = 0xa1b2c3d4
     SWAPPED_ORDER_HEADER_FORMAT = '<IHHiIII'
     NATIVE_ORDER_HEADER_FORMAT = '>IHHiIII'
 
@@ -177,5 +178,5 @@ def loads(io):
 
 
 def dumps(cap):
-    return struct.pack(cap.header_format(), MAGIC_VALUE, cap.major_version, cap.minor_version, cap.time_zone_hours, 0,
+    return struct.pack(cap.header_format(), CaptureFile.MAGIC_VALUE, cap.major_version, cap.minor_version, cap.time_zone_hours, 0,
                        cap.max_capture_length_octets, cap.link_layer_type.value)
