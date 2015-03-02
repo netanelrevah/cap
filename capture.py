@@ -107,7 +107,7 @@ class CaptureFile(object):
 
     def __repr__(self):
         if len(self) == 0:
-            return '<CaptureFile - Empty Cap>'
+            return '<CaptureFile - Empty cap>'
         return '<CaptureFile - %d packets from %s to %s>' % (len(self), self[0].capture_time, self[-1].capture_time)
 
 
