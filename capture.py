@@ -1,5 +1,9 @@
 import StringIO
 
+
+
+
+
 __author__ = 'netanelrevah'
 
 import struct
@@ -16,9 +20,6 @@ NATIVE_ORDERING_MAGIC = '\xa1\xb2\xc3\xd4'
 NATIVE_ORDERING_MAGIC_WITH_NS = '\xa1\xb2\x3c\xd4'
 SWAPPED_ORDERING_MAGIC = '\xd4\xc3\xb2\xa1'
 SWAPPED_ORDERING_MAGIC_WITH_NS = '\xd4\x3c\xb2\xa1'
-
-HEADER_NATIVE_UNPACKING_STRING = 'IHHiIII'
-HEADER_SWAPPED_UNPACKING_STRING = 'IHHiIII'
 
 
 class CaptureFileGenerator(object):
@@ -55,10 +56,13 @@ class CaptureFileGenerator(object):
 
 
 class CaptureFile(object):
+    SWAPPED_ORDER_HEADER_FORMAT = '<IHHiIII'
+    NATIVE_ORDER_HEADER_FORMAT = '>IHHiIII'
+
     def __init__(self, swapped_order, version, link_layer_type, time_zone, max_capture_length):
         self.header = None
-        self.swapped_order = True
-        self.version = (2, 4)
+        self.swapped_order = swapped_order
+        self.version = version
 
         if not isinstance(time_zone, timedelta):
             time_zone = timedelta(hours=time_zone)
@@ -71,6 +75,27 @@ class CaptureFile(object):
         self.max_capture_length = max_capture_length
         self.packets = []
 
+    @property
+    def max_capture_length_octets(self):
+        return self.max_capture_length * 2
+
+    @property
+    def major_version(self):
+        major, _ = self.version
+        return major
+
+    @property
+    def minor_version(self):
+        _, minor = self.version
+        return minor
+
+    @property
+    def time_zone_hours(self):
+        return self.time_zone.seconds / 3600
+
+    def header_format(self):
+        return CaptureFile.SWAPPED_ORDER_HEADER_FORMAT if self.swapped_order else CaptureFile.NATIVE_ORDER_HEADER_FORMAT
+
     def __len__(self):
         return len(self.packets)
 
@@ -81,6 +106,8 @@ class CaptureFile(object):
         return self.packets.__iter__()
 
     def __repr__(self):
+        if len(self) == 0:
+            return '<CaptureFile - Empty Cap>'
         return '<CaptureFile - %d packets from %s to %s>' % (len(self), self[0].capture_time, self[-1].capture_time)
 
 
@@ -150,9 +177,5 @@ def loads(io):
 
 
 def dumps(cap):
-    assert isinstance(cap, CaptureFile)
-    major, minor = cap.version
-    time_zone = cap.time_zone.seconds / 60 / 60
-    snapshot_len = cap.max_capture_length * 2
-    structure_format = 'IHHiIII' if not cap.swapped_order else '<IHHiIII'
-    return struct.pack(structure_format, MAGIC_VALUE, major, minor, time_zone, 0, snapshot_len, cap.link_layer_type.value)
+    return struct.pack(cap.header_format(), MAGIC_VALUE, cap.major_version, cap.minor_version, cap.time_zone_hours, 0,
+                       cap.max_capture_length_octets, cap.link_layer_type.value)
