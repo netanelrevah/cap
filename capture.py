@@ -1,28 +1,18 @@
-import StringIO
-
-
-
-
-
 __author__ = 'netanelrevah'
 
-import struct
-from datetime import datetime, timedelta
 from enum import Enum
+from datetime import datetime, timedelta
+import struct
+import StringIO
 
 
 class LinkLayerHeaderTypes(Enum):
     none, ethernet = range(0, 2)
 
 
-
-NATIVE_ORDERING_MAGIC = '\xa1\xb2\xc3\xd4'
-NATIVE_ORDERING_MAGIC_WITH_NS = '\xa1\xb2\x3c\xd4'
-SWAPPED_ORDERING_MAGIC = '\xd4\xc3\xb2\xa1'
-SWAPPED_ORDERING_MAGIC_WITH_NS = '\xd4\x3c\xb2\xa1'
-
-
 class CaptureFileGenerator(object):
+    SWAPPED_ORDERING_MAGIC = '\xd4\xc3\xb2\xa1'
+
     def __init__(self, io):
         self.io = io
         self._extract_header_data(self.io.read(24))
@@ -30,9 +20,9 @@ class CaptureFileGenerator(object):
 
     def _extract_header_data(self, header):
         unpacked_header = None
-        if header.startswith('\xD4\xC3\xB2\xA1'):
+        if header.startswith(CaptureFileGenerator.SWAPPED_ORDERING_MAGIC):
             unpacked_header = struct.unpack('IHHiIII', header)
-        swapped_order = (header[0:4] == SWAPPED_ORDERING_MAGIC)
+        swapped_order = (header[0:4] == CaptureFileGenerator.SWAPPED_ORDERING_MAGIC)
         version = (unpacked_header[1], unpacked_header[2])
         self.cap = CaptureFile(swapped_order, version, unpacked_header[6], unpacked_header[3], unpacked_header[5] / 2)
         self.cap.header = header
@@ -172,11 +162,11 @@ def loads(io):
     while True:
         try:
             cap_generator.next()
-        except StopIteration as e:
+        except StopIteration:
             break
     return cap_generator.cap
 
 
 def dumps(cap):
-    return struct.pack(cap.header_format(), CaptureFile.MAGIC_VALUE, cap.major_version, cap.minor_version, cap.time_zone_hours, 0,
-                       cap.max_capture_length_octets, cap.link_layer_type.value)
+    return struct.pack(cap.header_format(), CaptureFile.MAGIC_VALUE, cap.major_version, cap.minor_version,
+                       cap.time_zone_hours, 0, cap.max_capture_length_octets, cap.link_layer_type.value)
