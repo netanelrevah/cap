@@ -6,6 +6,15 @@ import struct
 import StringIO
 
 
+class InvalidCapException(Exception):
+    def __init__(self, data):
+        self.data = data
+        if data == "":
+            super(InvalidCapException, self).__init__("Got empty stream. Cap must have at least 24 bytes")
+        elif len(data) < 24:
+            super(InvalidCapException, self).__init__("Data too short: len('%s') == %d" % (data, len(data)))
+
+
 class LinkLayerHeaderTypes(Enum):
     none, ethernet = range(0, 2)
 
@@ -15,10 +24,14 @@ class CaptureFileGenerator(object):
 
     def __init__(self, io):
         self.io = io
-        self._extract_header_data(self.io.read(24))
+        self.cap = None
+        self.initialized = False
         pass
 
-    def _extract_header_data(self, header):
+    def _initialize(self):
+        if self.io.len < 24:
+            raise InvalidCapException(self.io.read())
+        header = self.io.read(24)
         if header.startswith(CaptureFileGenerator.SWAPPED_ORDERING_MAGIC):
             unpacked_header = struct.unpack(CaptureFile.SWAPPED_ORDER_HEADER_FORMAT, header)
         else:
@@ -27,6 +40,7 @@ class CaptureFileGenerator(object):
         version = (unpacked_header[1], unpacked_header[2])
         self.cap = CaptureFile(swapped_order, version, unpacked_header[6], unpacked_header[3], unpacked_header[5] / 2)
         self.cap.header = header
+        self.initialized = True
 
     def __iter__(self):
         return self
@@ -35,6 +49,8 @@ class CaptureFileGenerator(object):
         return self.next()
 
     def next(self):
+        if not self.initialized:
+            self._initialize()
         packet_header = self.io.read(16)
         if packet_header != '':
             seconds, micro_seconds, data_length, original_length = struct.unpack('IIII', packet_header)
