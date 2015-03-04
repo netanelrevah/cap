@@ -32,10 +32,9 @@ class CaptureFileGenerator(object):
         pass
 
     def _initialize(self):
-        if self.io.len < 24:
-            raise InvalidCapException(self.io.read())
         header = self.io.read(24)
-        if header[:4] not in CaptureFileGenerator.VALID_MAGICS and header[3::-1] not in CaptureFileGenerator.VALID_MAGICS:
+        if len(header) < 24 or ((header[:4] not in CaptureFileGenerator.VALID_MAGICS) and
+                                    (header[3::-1] not in CaptureFileGenerator.VALID_MAGICS)):
             raise InvalidCapException(header + self.io.read())
         if header.startswith(CaptureFileGenerator.SWAPPED_ORDERING_MAGIC):
             unpacked_header = struct.unpack(CaptureFile.SWAPPED_ORDER_HEADER_FORMAT, header)
@@ -170,6 +169,9 @@ class CapturedPacket(object):
 
     def __iter__(self):
         return self.data.__iter__()
+
+    def __getitem__(self, item):
+        return self.data.__getitem__(item)
 
 
 def load(path):
