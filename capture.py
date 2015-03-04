@@ -19,9 +19,10 @@ class CaptureFileGenerator(object):
         pass
 
     def _extract_header_data(self, header):
-        unpacked_header = None
         if header.startswith(CaptureFileGenerator.SWAPPED_ORDERING_MAGIC):
-            unpacked_header = struct.unpack('IHHiIII', header)
+            unpacked_header = struct.unpack(CaptureFile.SWAPPED_ORDER_HEADER_FORMAT, header)
+        else:
+            unpacked_header = struct.unpack(CaptureFile.NATIVE_ORDER_HEADER_FORMAT, header)
         swapped_order = (header[0:4] == CaptureFileGenerator.SWAPPED_ORDERING_MAGIC)
         version = (unpacked_header[1], unpacked_header[2])
         self.cap = CaptureFile(swapped_order, version, unpacked_header[6], unpacked_header[3], unpacked_header[5] / 2)
