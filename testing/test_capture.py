@@ -38,7 +38,7 @@ def test_loads_empty_cap():
     cap = capture.loads(CAP_HEADER)
     assert cap.swapped_order is False
     assert cap.version == (2, 4)
-    assert cap.link_layer_type == capture.LinkLayerHeaderTypes.ethernet
+    assert cap.link_layer_type == capture.LinkLayerTypes.ethernet
     assert cap.time_zone == datetime.timedelta(hours=0)
     assert cap.max_capture_length == 131072
     assert len(cap) == 0
@@ -49,7 +49,7 @@ def test_loads_empty_cap_with_big_endian():
     cap = capture.loads(CAP_HEADER_WITH_SWAPPED_ORDER)
     assert cap.swapped_order is True
     assert cap.version == (2, 4)
-    assert cap.link_layer_type == capture.LinkLayerHeaderTypes.ethernet
+    assert cap.link_layer_type == capture.LinkLayerTypes.ethernet
     assert cap.time_zone == datetime.timedelta(hours=0)
     assert cap.max_capture_length == 131072
     assert len(cap) == 0
@@ -57,26 +57,26 @@ def test_loads_empty_cap_with_big_endian():
 
 
 def test_create_new_capture_file():
-    cap = capture.CaptureFile(swapped_order=True, version=(6, 7),
-                              link_layer_type=capture.LinkLayerHeaderTypes.ethernet,
+    cap = capture.NetworkCapture(swapped_order=True, version=(6, 7),
+                              link_layer_type=capture.LinkLayerTypes.ethernet,
                               time_zone=datetime.timedelta(hours=0), max_capture_length=123456)
     assert cap.swapped_order is True
     assert cap.version == (6, 7)
-    assert cap.link_layer_type == capture.LinkLayerHeaderTypes.ethernet
+    assert cap.link_layer_type == capture.LinkLayerTypes.ethernet
     assert cap.time_zone == datetime.timedelta(hours=0)
     assert cap.max_capture_length == 123456
     assert len(cap) == 0
 
 
 def test_dumps_empty_capture_file():
-    cap = capture.CaptureFile(swapped_order=False, version=(2, 4),
-                              link_layer_type=capture.LinkLayerHeaderTypes.ethernet,
+    cap = capture.NetworkCapture(swapped_order=False, version=(2, 4),
+                              link_layer_type=capture.LinkLayerTypes.ethernet,
                               time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
     assert CAP_HEADER == capture.dumps(cap)
 
 
 def test_dumps_empty_capture_file_with_swapped_order():
-    cap = capture.CaptureFile(swapped_order=True, version=(2, 4),
-                              link_layer_type=capture.LinkLayerHeaderTypes.ethernet,
+    cap = capture.NetworkCapture(swapped_order=True, version=(2, 4),
+                              link_layer_type=capture.LinkLayerTypes.ethernet,
                               time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
     assert CAP_HEADER_WITH_SWAPPED_ORDER == capture.dumps(cap)

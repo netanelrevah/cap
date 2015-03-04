@@ -17,11 +17,11 @@ class InvalidCapException(Exception):
             super(InvalidCapException, self).__init__("Magic is not valid: %r" % (data[0:4]))
 
 
-class LinkLayerHeaderTypes(Enum):
+class LinkLayerTypes(Enum):
     none, ethernet = range(0, 2)
 
 
-class CaptureFileGenerator(object):
+class NetworkCaptureLoader(object):
     VALID_MAGICS = ['\xa1\xb2\xc3\xd4', '\xa1\xb2\x3c\xd4']
     SWAPPED_ORDERING_MAGIC = '\xd4\xc3\xb2\xa1'
 
@@ -33,16 +33,18 @@ class CaptureFileGenerator(object):
 
     def _initialize(self):
         header = self.io.read(24)
-        if len(header) < 24 or ((header[:4] not in CaptureFileGenerator.VALID_MAGICS) and
-                                    (header[3::-1] not in CaptureFileGenerator.VALID_MAGICS)):
+        if len(header) < 24 or ((header[:4] not in NetworkCaptureLoader.VALID_MAGICS) and
+                                (header[3::-1] not in NetworkCaptureLoader.VALID_MAGICS)):
             raise InvalidCapException(header + self.io.read())
-        if header.startswith(CaptureFileGenerator.SWAPPED_ORDERING_MAGIC):
-            unpacked_header = struct.unpack(CaptureFile.SWAPPED_ORDER_HEADER_FORMAT, header)
+        if header.startswith(NetworkCaptureLoader.SWAPPED_ORDERING_MAGIC):
+            swapped_order = True
+            unpacked_header = struct.unpack(NetworkCapture.SWAPPED_ORDER_HEADER_FORMAT, header)
         else:
-            unpacked_header = struct.unpack(CaptureFile.NATIVE_ORDER_HEADER_FORMAT, header)
-        swapped_order = (header[0:4] == CaptureFileGenerator.SWAPPED_ORDERING_MAGIC)
+            swapped_order = False
+            unpacked_header = struct.unpack(NetworkCapture.NATIVE_ORDER_HEADER_FORMAT, header)
         version = (unpacked_header[1], unpacked_header[2])
-        self.cap = CaptureFile(swapped_order, version, unpacked_header[6], unpacked_header[3], unpacked_header[5] / 2)
+        self.cap = NetworkCapture(swapped_order, version, unpacked_header[6], unpacked_header[3],
+                                  unpacked_header[5] / 2)
         self.cap.header = header
         self.initialized = True
 
@@ -66,7 +68,7 @@ class CaptureFileGenerator(object):
             raise StopIteration()
 
 
-class CaptureFile(object):
+class NetworkCapture(object):
     MAGIC_VALUE = 0xa1b2c3d4
     SWAPPED_ORDER_HEADER_FORMAT = '<IHHiIII'
     NATIVE_ORDER_HEADER_FORMAT = '>IHHiIII'
@@ -80,9 +82,9 @@ class CaptureFile(object):
             time_zone = timedelta(hours=time_zone)
         self.time_zone = time_zone
 
-        if not isinstance(link_layer_type, LinkLayerHeaderTypes):
-            link_layer_type = LinkLayerHeaderTypes(link_layer_type)
-        self.link_layer_type = LinkLayerHeaderTypes(link_layer_type)
+        if not isinstance(link_layer_type, LinkLayerTypes):
+            link_layer_type = LinkLayerTypes(link_layer_type)
+        self.link_layer_type = LinkLayerTypes(link_layer_type)
 
         self.max_capture_length = max_capture_length
         self.packets = []
@@ -106,7 +108,7 @@ class CaptureFile(object):
         return self.time_zone.seconds / 3600
 
     def header_format(self):
-        return CaptureFile.SWAPPED_ORDER_HEADER_FORMAT if self.swapped_order else CaptureFile.NATIVE_ORDER_HEADER_FORMAT
+        return NetworkCapture.SWAPPED_ORDER_HEADER_FORMAT if self.swapped_order else NetworkCapture.NATIVE_ORDER_HEADER_FORMAT
 
     def __len__(self):
         return len(self.packets)
@@ -149,14 +151,14 @@ class CapturedPacket(object):
 
         hs = []
         for i in xrange(len(self) / 16 + 1):
-            first_dword = self.data[i*16: i*16+8]
-            last_dword = self.data[i*16+8: i*16+16]
+            first_dword = self.data[i * 16: i * 16 + 8]
+            last_dword = self.data[i * 16 + 8: i * 16 + 16]
 
-            h = indexes_format.format(i*16)
+            h = indexes_format.format(i * 16)
             h += ' '.join("{:02x}".format(ord(byte)) for byte in first_dword)
             if last_dword != '':
                 h += '  '
-                h += indexes_format.format(i*16+8)
+                h += indexes_format.format(i * 16 + 8)
                 h += ' '.join("{:02x}".format(ord(byte)) for byte in last_dword)
             hs.append(h)
         return '\n'.join(hs)
@@ -185,7 +187,7 @@ def load(path):
 def loads(io):
     if isinstance(io, str):
         io = StringIO.StringIO(io)
-    cap_generator = CaptureFileGenerator(io)
+    cap_generator = NetworkCaptureLoader(io)
     while True:
         try:
             cap_generator.next()
@@ -195,5 +197,5 @@ def loads(io):
 
 
 def dumps(cap):
-    return struct.pack(cap.header_format(), CaptureFile.MAGIC_VALUE, cap.major_version, cap.minor_version,
+    return struct.pack(cap.header_format(), NetworkCapture.MAGIC_VALUE, cap.major_version, cap.minor_version,
                        cap.time_zone_hours, 0, cap.max_capture_length_octets, cap.link_layer_type.value)
