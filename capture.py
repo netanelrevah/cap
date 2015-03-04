@@ -122,6 +122,9 @@ class CaptureFile(object):
             return '<CaptureFile - Empty cap>'
         return '<CaptureFile - %d packets from %s to %s>' % (len(self), self[0].capture_time, self[-1].capture_time)
 
+    def append(self, packet):
+        self.packets.append(packet)
+
 
 class CapturedPacket(object):
     def __init__(self, data, seconds, micro_seconds, original_length):
