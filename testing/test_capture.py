@@ -1,3 +1,4 @@
+import _pytest.python
 import datetime
 import capture
 
@@ -11,6 +12,20 @@ CAP_HEADER_WITH_SWAPPED_ORDER = "\xD4\xC3\xB2\xA1\x02\x00\x04\x00\x00\x00\x00\x0
                                 "\x00\x00\x00"
 
 
+def test_loads_empty_file():
+    with _pytest.python.raises(capture.InvalidCapException) as e:
+        capture.loads("")
+    assert e.value.data == ""
+
+
+def test_loads_too_short_data():
+    import random
+    random_string = ''.join([chr(random.randint(0, 255)) for i in xrange(0, random.randint(0, 23))])
+    with _pytest.python.raises(capture.InvalidCapException) as e:
+        capture.loads(random_string)
+    assert e.value.data == random_string
+
+
 def test_loads_empty_cap():
     cap = capture.loads(CAP_HEADER)
     assert cap.swapped_order is False
@@ -20,6 +35,7 @@ def test_loads_empty_cap():
     assert cap.max_capture_length == 131072
     assert len(cap) == 0
     pass
+
 
 def test_loads_empty_cap_with_big_endian():
     cap = capture.loads(CAP_HEADER_WITH_SWAPPED_ORDER)
