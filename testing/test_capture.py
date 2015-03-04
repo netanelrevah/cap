@@ -96,7 +96,7 @@ def test_dumps_capture_with_some_packets():
     cap = capture.NetworkCapture(swapped_order=False, version=(2, 4),
                                  link_layer_type=capture.LinkLayerTypes.ethernet,
                                  time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
-    for i in xrange(random.randint(0, 15)):
+    for i in xrange(random.randint(1, 15)):
         cap.append(capture.CapturedPacket(create_random_byte_array(100, 1500), i))
 
     io = StringIO(capture.dumps(cap))
