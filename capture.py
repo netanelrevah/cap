@@ -13,6 +13,8 @@ class InvalidCapException(Exception):
             super(InvalidCapException, self).__init__("Got empty stream. Cap must have at least 24 bytes")
         elif len(data) < 24:
             super(InvalidCapException, self).__init__("Data too short: len('%s') == %d" % (data, len(data)))
+        else:
+            super(InvalidCapException, self).__init__("Magic is not valid: %r" % (data[0:4]))
 
 
 class LinkLayerHeaderTypes(Enum):
@@ -20,6 +22,7 @@ class LinkLayerHeaderTypes(Enum):
 
 
 class CaptureFileGenerator(object):
+    VALID_MAGICS = ['\xa1\xb2\xc3\xd4', '\xa1\xb2\x3c\xd4']
     SWAPPED_ORDERING_MAGIC = '\xd4\xc3\xb2\xa1'
 
     def __init__(self, io):
@@ -32,6 +35,8 @@ class CaptureFileGenerator(object):
         if self.io.len < 24:
             raise InvalidCapException(self.io.read())
         header = self.io.read(24)
+        if header[:4] not in CaptureFileGenerator.VALID_MAGICS and header[3::-1] not in CaptureFileGenerator.VALID_MAGICS:
+            raise InvalidCapException(header + self.io.read())
         if header.startswith(CaptureFileGenerator.SWAPPED_ORDERING_MAGIC):
             unpacked_header = struct.unpack(CaptureFile.SWAPPED_ORDER_HEADER_FORMAT, header)
         else:
