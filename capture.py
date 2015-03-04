@@ -2,6 +2,7 @@ __author__ = 'netanelrevah'
 
 from enum import Enum
 from datetime import datetime, timedelta
+import time
 import struct
 import StringIO
 
@@ -73,7 +74,7 @@ class NetworkCapture(object):
     SWAPPED_ORDER_HEADER_FORMAT = '<IHHiIII'
     NATIVE_ORDER_HEADER_FORMAT = '>IHHiIII'
 
-    def __init__(self, swapped_order, version, link_layer_type, time_zone, max_capture_length):
+    def __init__(self, swapped_order=False, version=(2, 4), link_layer_type=0, time_zone=0, max_capture_length=131072):
         self.header = None
         self.swapped_order = swapped_order
         self.version = version
@@ -129,12 +130,20 @@ class NetworkCapture(object):
 
 
 class CapturedPacket(object):
-    def __init__(self, data, seconds, micro_seconds, original_length):
+    def __init__(self, data, seconds=None, micro_seconds=None, original_length=None):
         self.header = None
         self.data = data
+        if seconds is None:
+            now = datetime.now()
+            self.seconds = time.mktime(now.timetuple())
+            self.micro_seconds = now.microsecond
+        if micro_seconds is None:
+            micro_seconds = 0
         self.seconds = seconds
         self.micro_seconds = micro_seconds
         self.original_length = original_length
+        if self.original_length is None:
+            self.original_length = len(data)
 
     @property
     def capture_time(self):
@@ -178,6 +187,10 @@ class CapturedPacket(object):
     def __getitem__(self, item):
         return self.data.__getitem__(item)
 
+    def dump(self):
+        header = struct.pack('>IIII', self.seconds, self.micro_seconds, len(self), self.original_length)
+        return header + self.data
+
 
 def load(path):
     io = open(path, 'rb')
@@ -197,5 +210,9 @@ def loads(io):
 
 
 def dumps(cap):
-    return struct.pack(cap.header_format(), NetworkCapture.MAGIC_VALUE, cap.major_version, cap.minor_version,
+    file_header =  struct.pack(cap.header_format(), NetworkCapture.MAGIC_VALUE, cap.major_version, cap.minor_version,
                        cap.time_zone_hours, 0, cap.max_capture_length_octets, cap.link_layer_type.value)
+    packet_dump = []
+    for packet in cap:
+        packet_dump.append(packet.dump())
+    return file_header + ''.join(packet_dump)
