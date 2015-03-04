@@ -35,7 +35,7 @@ class NetworkCaptureLoader(object):
     def _initialize(self):
         header = self.io.read(24)
         if len(header) < 24 or ((header[:4] not in NetworkCaptureLoader.VALID_MAGICS) and
-                                (header[3::-1] not in NetworkCaptureLoader.VALID_MAGICS)):
+                                    (header[3::-1] not in NetworkCaptureLoader.VALID_MAGICS)):
             raise InvalidCapException(header + self.io.read())
         if header.startswith(NetworkCaptureLoader.SWAPPED_ORDERING_MAGIC):
             swapped_order = True
@@ -128,6 +128,18 @@ class NetworkCapture(object):
     def append(self, packet):
         self.packets.append(packet)
 
+    def dump(self):
+        file_header = struct.pack(self.header_format(),
+                                  NetworkCapture.MAGIC_VALUE,
+                                  self.major_version, self.minor_version,
+                                  self.time_zone_hours, 0,
+                                  self.max_capture_length_octets,
+                                  self.link_layer_type.value)
+        packet_dump = []
+        for packet in self:
+            packet_dump.append(packet.dump())
+        return file_header + ''.join(packet_dump)
+
 
 class CapturedPacket(object):
     def __init__(self, data, seconds=None, micro_seconds=None, original_length=None):
@@ -209,10 +221,9 @@ def loads(io):
     return cap_generator.cap
 
 
+def dump(cap, path):
+    open(path, 'wb').write(dumps(cap))
+
+
 def dumps(cap):
-    file_header =  struct.pack(cap.header_format(), NetworkCapture.MAGIC_VALUE, cap.major_version, cap.minor_version,
-                       cap.time_zone_hours, 0, cap.max_capture_length_octets, cap.link_layer_type.value)
-    packet_dump = []
-    for packet in cap:
-        packet_dump.append(packet.dump())
-    return file_header + ''.join(packet_dump)
+    return cap.dump()
