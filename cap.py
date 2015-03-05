@@ -4,7 +4,10 @@ from enum import Enum
 from datetime import datetime, timedelta
 import time
 import struct
-import StringIO
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 
 class InvalidCapException(Exception):
@@ -211,7 +214,7 @@ def load(path):
 
 def loads(io):
     if isinstance(io, str):
-        io = StringIO.StringIO(io)
+        io = StringIO(io)
     cap_generator = NetworkCaptureLoader(io)
     while True:
         try:
