@@ -15,8 +15,8 @@ CAP_HEADER_WITH_SWAPPED_ORDER = "\xD4\xC3\xB2\xA1\x02\x00\x04\x00\x00\x00\x00\x0
                                 "\x00\x00\x00"
 
 
-def create_random_byte_array(min, max):
-    return ''.join([chr(random.randint(0, 255)) for i in xrange(0, random.randint(min, max))])
+def create_random_byte_array(minimum, maximum):
+    return ''.join([chr(random.randint(0, 255)) for i in xrange(0, random.randint(minimum, maximum))])
 
 
 def test_loads_empty_file():
@@ -26,8 +26,6 @@ def test_loads_empty_file():
 
 
 def test_loads_too_short_data():
-    import random
-
     random_string = create_random_byte_array(0, 23)
     with _pytest.python.raises(cap.InvalidCapException) as e:
         cap.loads(random_string)
@@ -35,8 +33,6 @@ def test_loads_too_short_data():
 
 
 def test_loads_cap_with_wrong_magic():
-    import random
-
     random_string = "\xFF" + create_random_byte_array(23, 23)
     with _pytest.python.raises(cap.InvalidCapException) as e:
         cap.loads(random_string)
@@ -67,8 +63,8 @@ def test_loads_empty_cap_with_big_endian():
 
 def test_create_new_capture_file():
     c = cap.NetworkCapture(swapped_order=True, version=(6, 7),
-                                 link_layer_type=cap.LinkLayerTypes.ethernet,
-                                 time_zone=datetime.timedelta(hours=0), max_capture_length=123456)
+                           link_layer_type=cap.LinkLayerTypes.ethernet,
+                           time_zone=datetime.timedelta(hours=0), max_capture_length=123456)
     assert c.swapped_order is True
     assert c.version == (6, 7)
     assert c.link_layer_type == cap.LinkLayerTypes.ethernet
@@ -79,23 +75,24 @@ def test_create_new_capture_file():
 
 def test_dumps_empty_capture_file():
     c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
-                                 link_layer_type=cap.LinkLayerTypes.ethernet,
-                                 time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
+                           link_layer_type=cap.LinkLayerTypes.ethernet,
+                           time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
     assert CAP_HEADER == cap.dumps(c)
 
 
 def test_dumps_empty_capture_file_with_swapped_order():
     c = cap.NetworkCapture(swapped_order=True, version=(2, 4),
-                                 link_layer_type=cap.LinkLayerTypes.ethernet,
-                                 time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
+                           link_layer_type=cap.LinkLayerTypes.ethernet,
+                           time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
     assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c)
 
 
 def test_dumps_capture_with_some_packets():
     import random
+
     c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
-                                 link_layer_type=cap.LinkLayerTypes.ethernet,
-                                 time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
+                           link_layer_type=cap.LinkLayerTypes.ethernet,
+                           time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
     for i in xrange(random.randint(1, 15)):
         c.append(cap.CapturedPacket(create_random_byte_array(100, 1500), i))
 
@@ -111,4 +108,3 @@ def test_dumps_capture_with_some_packets():
         assert io.read(len(c[index])) == c[index].data
         index += 1
     assert index == len(c)
-
