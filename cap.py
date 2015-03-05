@@ -52,6 +52,9 @@ class NetworkCaptureLoader(object):
     def __iter__(self):
         return self
 
+    def next(self):
+        return next(self)
+
     def __next__(self):
         if not self.initialized:
             self._initialize()
