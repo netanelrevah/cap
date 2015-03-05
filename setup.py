@@ -7,7 +7,7 @@ setup(
     version='0.0.2',
     py_modules=['cap'],
     install_requires=REQUIREMENTS,
-    url='https://github.com/code-museum/capture',
+    url='https://github.com/code-museum/cap',
     license='GNU General Public License, version 2',
     author='code-museum',
     author_email='code-museum@users.noreply.github.com',
