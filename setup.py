@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name='capture',
+    name='cap',
     version='0.0.1',
     py_modules=['capture'],
     url='https://github.com/code-museum/capture',
