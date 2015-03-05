@@ -4,7 +4,7 @@ from enum import Enum
 from datetime import datetime, timedelta
 import time
 import struct
-import StringIO
+from io import BytesIO
 
 
 class InvalidCapException(Exception):
@@ -19,12 +19,12 @@ class InvalidCapException(Exception):
 
 
 class LinkLayerTypes(Enum):
-    none, ethernet = range(0, 2)
+    none, ethernet = list(range(0, 2))
 
 
 class NetworkCaptureLoader(object):
-    VALID_MAGICS = ['\xa1\xb2\xc3\xd4', '\xa1\xb2\x3c\xd4']
-    SWAPPED_ORDERING_MAGIC = '\xd4\xc3\xb2\xa1'
+    VALID_MAGICS = [b'\xa1\xb2\xc3\xd4', b'\xa1\xb2\x3c\xd4']
+    SWAPPED_ORDERING_MAGIC = b'\xd4\xc3\xb2\xa1'
 
     def __init__(self, io):
         self.io = io
@@ -52,14 +52,14 @@ class NetworkCaptureLoader(object):
     def __iter__(self):
         return self
 
-    def __next__(self):
-        return self.next()
-
     def next(self):
+        return self.__next__()
+
+    def __next__(self):
         if not self.initialized:
             self._initialize()
         packet_header = self.io.read(16)
-        if packet_header != '':
+        if packet_header != b'':
             seconds, micro_seconds, data_length, original_length = struct.unpack('IIII', packet_header)
             p = CapturedPacket(self.io.read(data_length), seconds, micro_seconds, original_length)
             p.header = packet_header
@@ -106,7 +106,7 @@ class NetworkCapture(object):
 
     @property
     def time_zone_hours(self):
-        return self.time_zone.seconds / 3600
+        return int(self.time_zone.seconds / 3600)
 
     def header_format(self):
         return NetworkCapture.SWAPPED_ORDER_HEADER_FORMAT if self.swapped_order else NetworkCapture.NATIVE_ORDER_HEADER_FORMAT
@@ -138,7 +138,10 @@ class NetworkCapture(object):
         packet_dump = []
         for packet in self:
             packet_dump.append(packet.dump())
-        return file_header + ''.join(packet_dump)
+        ret = file_header
+        for pd in packet_dump:
+            ret += pd
+        return ret
 
 
 class CapturedPacket(object):
@@ -171,7 +174,7 @@ class CapturedPacket(object):
         indexes_format = "{:" + str(max_index_len) + "}: "
 
         hs = []
-        for i in xrange(len(self) / 16 + 1):
+        for i in range(len(self) / 16 + 1):
             first_dword = self.data[i * 16: i * 16 + 8]
             last_dword = self.data[i * 16 + 8: i * 16 + 16]
 
@@ -210,12 +213,12 @@ def load(path):
 
 
 def loads(io):
-    if isinstance(io, str):
-        io = StringIO.StringIO(io)
+    if isinstance(io, bytes):
+        io = BytesIO(io)
     cap_generator = NetworkCaptureLoader(io)
     while True:
         try:
-            cap_generator.next()
+            next(cap_generator)
         except StopIteration:
             break
     return cap_generator.cap
