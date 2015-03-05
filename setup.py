@@ -1,6 +1,6 @@
 from setuptools import setup
 
-REQUIREMENTS = ['enum']
+REQUIREMENTS = ['enum34']
 
 setup(
     name='cap',
