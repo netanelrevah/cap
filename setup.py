@@ -8,6 +8,6 @@ setup(
     license='GNU General Public License, version 2',
     author='code-museum',
     author_email='code-museum@users.noreply.github.com',
-    description='Capture: lightweight package for use network captures',
+    description='Cap: lightweight package for use network captures',
     keywords="network capture packet pcap"
 )
