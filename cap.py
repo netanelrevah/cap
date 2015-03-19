@@ -30,6 +30,7 @@ class NetworkCaptureLoader(object):
         self.io = io
         self.cap = None
         self.initialized = False
+        self.packet_pack_pattern = '>IIII'
         pass
 
     def _initialize(self):
@@ -40,6 +41,7 @@ class NetworkCaptureLoader(object):
         if header.startswith(NetworkCaptureLoader.SWAPPED_ORDERING_MAGIC):
             swapped_order = True
             unpacked_header = struct.unpack(NetworkCapture.SWAPPED_ORDER_HEADER_FORMAT, header)
+            self.packet_pack_pattern = '<IIII'
         else:
             swapped_order = False
             unpacked_header = struct.unpack(NetworkCapture.NATIVE_ORDER_HEADER_FORMAT, header)
@@ -60,7 +62,7 @@ class NetworkCaptureLoader(object):
             self._initialize()
         packet_header = self.io.read(16)
         if packet_header != b'':
-            seconds, micro_seconds, data_length, original_length = struct.unpack('IIII', packet_header)
+            seconds, micro_seconds, data_length, original_length = struct.unpack(self.packet_pack_pattern, packet_header)
             p = CapturedPacket(self.io.read(data_length), seconds, micro_seconds, original_length)
             p.header = packet_header
             self.cap.packets.append(p)
@@ -137,7 +139,7 @@ class NetworkCapture(object):
                                   self.link_layer_type.value)
         packet_dump = []
         for packet in self:
-            packet_dump.append(packet.dump())
+            packet_dump.append(packet.dump(self.swapped_order))
         ret = file_header
         for pd in packet_dump:
             ret += pd
@@ -202,8 +204,11 @@ class CapturedPacket(object):
     def __getitem__(self, item):
         return self.data.__getitem__(item)
 
-    def dump(self):
-        header = struct.pack('>IIII', self.seconds, self.micro_seconds, len(self), self.original_length)
+    def dump(self, swapped_order=False):
+        pack_pattern = '>IIII'
+        if swapped_order:
+            pack_pattern = '<IIII'
+        header = struct.pack(pack_pattern, self.seconds, self.micro_seconds, len(self), self.original_length)
         return header + self.data
 
 
