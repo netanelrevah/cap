@@ -95,7 +95,7 @@ class CapturedPacketLoader(object):
         self.packet_header = packet_header
         packet_packing_pattern = '>IIII'
         if self.swapped_order:
-            packet_packing_pattern = '>IIII'
+            packet_packing_pattern = '<IIII'
         seconds, micro_seconds, data_length, original_length = struct.unpack(packet_packing_pattern, packet_header)
         self.seconds = seconds
         self.micro_seconds = micro_seconds
@@ -197,14 +197,16 @@ class CapturedPacket(object):
     def __init__(self, data, seconds=None, micro_seconds=None, original_length=None):
         self.header = None
         self.data = data
+
+        self.seconds = seconds
+        self.micro_seconds = micro_seconds
+        if micro_seconds is None:
+            self.micro_seconds = 0
         if seconds is None:
             now = datetime.now()
             self.seconds = time.mktime(now.timetuple())
             self.micro_seconds = now.microsecond
-        if micro_seconds is None:
-            micro_seconds = 0
-        self.seconds = seconds
-        self.micro_seconds = micro_seconds
+
         self.original_length = original_length
         if self.original_length is None:
             self.original_length = len(data)
