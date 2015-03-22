@@ -4,7 +4,7 @@ from enum import Enum
 from datetime import datetime, timedelta
 import time
 import struct
-import StringIO
+from io import BytesIO
 
 
 class InvalidCapException(Exception):
@@ -19,17 +19,18 @@ class InvalidCapException(Exception):
 
 
 class LinkLayerTypes(Enum):
-    none, ethernet = range(0, 2)
+    none, ethernet = list(range(0, 2))
 
 
 class NetworkCaptureLoader(object):
-    VALID_MAGICS = ['\xa1\xb2\xc3\xd4', '\xa1\xb2\x3c\xd4']
-    SWAPPED_ORDERING_MAGIC = '\xd4\xc3\xb2\xa1'
+    VALID_MAGICS = [b'\xa1\xb2\xc3\xd4', b'\xa1\xb2\x3c\xd4']
+    SWAPPED_ORDERING_MAGIC = b'\xd4\xc3\xb2\xa1'
 
     def __init__(self, io):
         self.io = io
         self.cap = None
         self.initialized = False
+        self.swapped_order = False
         pass
 
     def _initialize(self):
@@ -38,35 +39,83 @@ class NetworkCaptureLoader(object):
                                     (header[3::-1] not in NetworkCaptureLoader.VALID_MAGICS)):
             raise InvalidCapException(header + self.io.read())
         if header.startswith(NetworkCaptureLoader.SWAPPED_ORDERING_MAGIC):
-            swapped_order = True
+            self.swapped_order = True
             unpacked_header = struct.unpack(NetworkCapture.SWAPPED_ORDER_HEADER_FORMAT, header)
         else:
-            swapped_order = False
             unpacked_header = struct.unpack(NetworkCapture.NATIVE_ORDER_HEADER_FORMAT, header)
         version = (unpacked_header[1], unpacked_header[2])
-        self.cap = NetworkCapture(swapped_order, version, unpacked_header[6], unpacked_header[3],
+        self.cap = NetworkCapture(self.swapped_order, version, unpacked_header[6], unpacked_header[3],
                                   unpacked_header[5] / 2)
         self.cap.header = header
         self.initialized = True
 
+    def initialize(self):
+        if not self.initialized:
+            self._initialize()
+
+    def _read_next_header(self):
+        return self.io.read(16)
+
+    def _read_next_data(self, data_length):
+        return self.io.read(data_length)
+
     def __iter__(self):
         return self
 
-    def __next__(self):
-        return self.next()
-
     def next(self):
-        if not self.initialized:
-            self._initialize()
-        packet_header = self.io.read(16)
-        if packet_header != '':
-            seconds, micro_seconds, data_length, original_length = struct.unpack('IIII', packet_header)
-            p = CapturedPacket(self.io.read(data_length), seconds, micro_seconds, original_length)
-            p.header = packet_header
-            self.cap.packets.append(p)
-            return p
-        else:
+        return self.__next__()
+
+    def __next__(self):
+        self.initialize()
+
+        packet_header = self._read_next_header()
+        if not packet_header:
             raise StopIteration()
+
+        loader = CapturedPacketLoader(self.swapped_order)
+        loader.parse_header(packet_header)
+        loader.data = self._read_next_data(loader.data_length)
+        p = loader.build()
+
+        self.cap.packets.append(p)
+        return p
+
+
+class CapturedPacketLoader(object):
+    def __init__(self, swapped_order=False):
+        self.swapped_order = swapped_order
+        self.packet_header = None
+        self.seconds = None
+        self.micro_seconds = None
+        self.data_length = None
+        self.original_length = None
+        self.data = None
+
+    def parse_header(self, packet_header):
+        self.packet_header = packet_header
+        packet_packing_pattern = '>IIII'
+        if self.swapped_order:
+            packet_packing_pattern = '<IIII'
+        seconds, micro_seconds, data_length, original_length = struct.unpack(packet_packing_pattern, packet_header)
+        self.seconds = seconds
+        self.micro_seconds = micro_seconds
+        self.data_length = data_length
+        self.original_length = original_length
+
+    @property
+    def has_header(self):
+        return self.seconds and self.micro_seconds and self.data_length and self.original_length
+
+    @property
+    def has_data(self):
+        return self.data is not None
+
+    def build(self):
+        if not self.has_header or not self.has_data:
+            return None
+        p = CapturedPacket(self.data, self.seconds, self.micro_seconds, self.original_length)
+        p.header = self.packet_header
+        return p
 
 
 class NetworkCapture(object):
@@ -106,7 +155,7 @@ class NetworkCapture(object):
 
     @property
     def time_zone_hours(self):
-        return self.time_zone.seconds / 3600
+        return int(self.time_zone.seconds / 3600)
 
     def header_format(self):
         return NetworkCapture.SWAPPED_ORDER_HEADER_FORMAT if self.swapped_order else NetworkCapture.NATIVE_ORDER_HEADER_FORMAT
@@ -128,7 +177,7 @@ class NetworkCapture(object):
     def append(self, packet):
         self.packets.append(packet)
 
-    def dump(self):
+    def dumps(self):
         file_header = struct.pack(self.header_format(),
                                   NetworkCapture.MAGIC_VALUE,
                                   self.major_version, self.minor_version,
@@ -137,22 +186,27 @@ class NetworkCapture(object):
                                   self.link_layer_type.value)
         packet_dump = []
         for packet in self:
-            packet_dump.append(packet.dump())
-        return file_header + ''.join(packet_dump)
+            packet_dump.append(packet.dumps(self.swapped_order))
+        ret = file_header
+        for pd in packet_dump:
+            ret += pd
+        return ret
 
 
 class CapturedPacket(object):
     def __init__(self, data, seconds=None, micro_seconds=None, original_length=None):
         self.header = None
         self.data = data
+
+        self.seconds = seconds
+        self.micro_seconds = micro_seconds
+        if micro_seconds is None:
+            self.micro_seconds = 0
         if seconds is None:
             now = datetime.now()
             self.seconds = time.mktime(now.timetuple())
             self.micro_seconds = now.microsecond
-        if micro_seconds is None:
-            micro_seconds = 0
-        self.seconds = seconds
-        self.micro_seconds = micro_seconds
+
         self.original_length = original_length
         if self.original_length is None:
             self.original_length = len(data)
@@ -171,7 +225,7 @@ class CapturedPacket(object):
         indexes_format = "{:" + str(max_index_len) + "}: "
 
         hs = []
-        for i in xrange(len(self) / 16 + 1):
+        for i in range(len(self) / 16 + 1):
             first_dword = self.data[i * 16: i * 16 + 8]
             last_dword = self.data[i * 16 + 8: i * 16 + 16]
 
@@ -199,8 +253,11 @@ class CapturedPacket(object):
     def __getitem__(self, item):
         return self.data.__getitem__(item)
 
-    def dump(self):
-        header = struct.pack('>IIII', self.seconds, self.micro_seconds, len(self), self.original_length)
+    def dumps(self, swapped_order=False):
+        pack_pattern = '>IIII'
+        if swapped_order:
+            pack_pattern = '<IIII'
+        header = struct.pack(pack_pattern, self.seconds, self.micro_seconds, len(self), self.original_length)
         return header + self.data
 
 
@@ -210,12 +267,12 @@ def load(path):
 
 
 def loads(io):
-    if isinstance(io, str):
-        io = StringIO.StringIO(io)
+    if isinstance(io, bytes):
+        io = BytesIO(io)
     cap_generator = NetworkCaptureLoader(io)
     while True:
         try:
-            cap_generator.next()
+            next(cap_generator)
         except StopIteration:
             break
     return cap_generator.cap
@@ -226,4 +283,4 @@ def dump(cap, path):
 
 
 def dumps(cap):
-    return cap.dump()
+    return cap.dumps()

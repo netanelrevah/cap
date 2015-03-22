@@ -4,10 +4,10 @@ REQUIREMENTS = ['enum34']
 
 setup(
     name='cap',
-    version='0.0.2',
+    version='0.0.3',
     py_modules=['cap'],
     install_requires=REQUIREMENTS,
-    url='https://github.com/code-museum/capture',
+    url='https://github.com/code-museum/cap',
     license='GNU General Public License, version 2',
     author='code-museum',
     author_email='code-museum@users.noreply.github.com',
