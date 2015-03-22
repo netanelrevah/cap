@@ -71,7 +71,7 @@ def test_loads_empty_cap_with_big_endian():
 def test_loads_cap_with_packet():
     c = cap.loads(CAP_HEADER_WITH_PACKET)
     p = c.packets[0]
-    assert p.data == '123456789'
+    assert p.data == b'123456789'
     assert len(p) == 9
     assert p.seconds == 1427055428.0
     assert p.micro_seconds == 779000
@@ -80,7 +80,7 @@ def test_loads_cap_with_packet():
 def test_loads_cap_with_packet_and_swapped_order():
     c = cap.loads(CAP_HEADER_WITH_PACKET_AND_SWAPPED_ORDER)
     p = c.packets[0]
-    assert p.data == '123456789'
+    assert p.data == b'123456789'
     assert len(p) == 9
     assert p.seconds == 1427055428.0
     assert p.micro_seconds == 779000
