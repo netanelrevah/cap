@@ -89,7 +89,7 @@ class CapturedPacketLoader(object):
         self.micro_seconds = None
         self.data_length = None
         self.original_length = None
-        self.data = None
+        self.data = b''
 
     def parse_header(self, packet_header):
         self.packet_header = packet_header
@@ -113,6 +113,8 @@ class CapturedPacketLoader(object):
     def build(self):
         if not self.has_header or not self.has_data:
             return None
+        if len(self.data) != self.data_length:
+            raise Exception('Packet header invalid, got data length %s instead of %s' % (len(self.data), self.data_length))
         p = CapturedPacket(self.data, self.seconds, self.micro_seconds, self.original_length)
         p.header = self.packet_header
         return p
