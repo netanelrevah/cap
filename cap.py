@@ -286,3 +286,14 @@ def dump(cap, path):
 
 def dumps(cap):
     return cap.dumps()
+
+
+def merge(target_path, *source_paths):
+    if not source_paths:
+        dump(NetworkCapture(), target_path)
+    else:
+        caps = [load(p) for p in source_paths]
+        new_cap = caps[0]
+        for c in caps[1:]:
+            new_cap.packets += c.packets
+        dump(new_cap, target_path)
