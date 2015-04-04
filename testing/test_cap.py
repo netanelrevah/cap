@@ -1,9 +1,13 @@
 from io import BytesIO
 import struct
-import _pytest.python
 import datetime
-import cap
 import random
+
+import _pytest.python
+from _pytest.python import fixture
+
+import cap
+
 
 __author__ = 'netanelrevah'
 
@@ -113,24 +117,26 @@ def test_dumps_empty_capture_file_with_swapped_order():
     assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c)
 
 
-def test_dumps_capture_with_some_packets():
-    import random
-
+@fixture
+def random_cap():
     c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
                            link_layer_type=cap.LinkLayerTypes.ethernet,
                            time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
-    for i in range(random.randint(1, 15)):
+    for i in range(random.randint(1, 50)):
         c.append(cap.CapturedPacket(create_random_byte_array(100, 1500), i))
+    return c
 
-    io = BytesIO(cap.dumps(c))
+
+def test_dumps_capture_with_some_packets(random_cap):
+    io = BytesIO(cap.dumps(random_cap))
     assert io.read(24) == CAP_HEADER
     index = 0
     while True:
         h = io.read(16)
         if h == b'':
             break
-        assert h == struct.pack('>IIII', c[index].seconds, c[index].micro_seconds, len(c[index]),
-                                c[index].original_length)
-        assert io.read(len(c[index])) == c[index].data
+        assert h == struct.pack('>IIII', random_cap[index].seconds, random_cap[index].micro_seconds,
+                                len(random_cap[index]), random_cap[index].original_length)
+        assert io.read(len(random_cap[index])) == random_cap[index].data
         index += 1
-    assert index == len(c)
+    assert index == len(random_cap)
