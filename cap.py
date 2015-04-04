@@ -159,6 +159,17 @@ class NetworkCapture(object):
     def time_zone_hours(self):
         return int(self.time_zone.seconds / 3600)
 
+    def copy(self):
+        c = NetworkCapture(self.swapped_order,self.version, self.link_layer_type.value, self.time_zone,
+                           self.max_capture_length)
+        c.packets = self.packets
+        return c
+
+    def __add__(self, other):
+        c = self.copy()
+        c.packets = c.packets + other.packets
+        return c
+
     def header_format(self):
         return NetworkCapture.SWAPPED_ORDER_HEADER_FORMAT if self.swapped_order else NetworkCapture.NATIVE_ORDER_HEADER_FORMAT
 
@@ -178,6 +189,11 @@ class NetworkCapture(object):
 
     def append(self, packet):
         self.packets.append(packet)
+        pass
+
+    def sort(self):
+        self.packets.sort(key=lambda p: p.capture_time)
+        pass
 
     def dumps(self):
         file_header = struct.pack(self.header_format(),
@@ -255,6 +271,9 @@ class CapturedPacket(object):
     def __getitem__(self, item):
         return self.data.__getitem__(item)
 
+    def __lt__(self, other):
+        return self.capture_time < other.capture_time
+
     def dumps(self, swapped_order=False):
         pack_pattern = '>IIII'
         if swapped_order:
@@ -286,3 +305,14 @@ def dump(cap, path):
 
 def dumps(cap):
     return cap.dumps()
+
+
+def merge(target_path, *source_paths):
+    if not source_paths:
+        dump(NetworkCapture(), target_path)
+    else:
+        caps = [load(p) for p in source_paths]
+        new_cap = caps[0]
+        for c in caps[1:]:
+            new_cap.packets += c.packets
+        dump(new_cap, target_path)

@@ -1,9 +1,12 @@
 from io import BytesIO
 import struct
-import _pytest.python
 import datetime
-import cap
 import random
+
+from _pytest.python import fixture, raises
+
+import cap
+
 
 __author__ = 'netanelrevah'
 
@@ -23,25 +26,25 @@ CAP_HEADER_WITH_PACKET_AND_SWAPPED_ORDER = b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x0
 
 
 def create_random_byte_array(minimum, maximum):
-    return b''.join([bytes(random.randint(0, 255)) for i in range(0, random.randint(minimum, maximum))])
+    return b''.join([bytes(random.randint(0, 255)) for _ in range(0, random.randint(minimum, maximum))])
 
 
 def test_loads_empty_file():
-    with _pytest.python.raises(cap.InvalidCapException) as e:
+    with raises(cap.InvalidCapException) as e:
         cap.loads(b"")
     assert e.value.data == b""
 
 
 def test_loads_too_short_data():
     random_string = create_random_byte_array(0, 23)
-    with _pytest.python.raises(cap.InvalidCapException) as e:
+    with raises(cap.InvalidCapException) as e:
         cap.loads(random_string)
     assert e.value.data == random_string
 
 
 def test_loads_cap_with_wrong_magic():
     random_string = b"\xFF" + create_random_byte_array(23, 23)
-    with _pytest.python.raises(cap.InvalidCapException) as e:
+    with raises(cap.InvalidCapException) as e:
         cap.loads(random_string)
     assert e.value.data == random_string
 
@@ -76,6 +79,7 @@ def test_loads_cap_with_packet():
     assert p.seconds == 1427055428.0
     assert p.micro_seconds == 779000
     assert p.original_length == 9
+
 
 def test_loads_cap_with_packet_and_swapped_order():
     c = cap.loads(CAP_HEADER_WITH_PACKET_AND_SWAPPED_ORDER)
@@ -113,24 +117,47 @@ def test_dumps_empty_capture_file_with_swapped_order():
     assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c)
 
 
-def test_dumps_capture_with_some_packets():
-    import random
+def test_sorting_cap_packets(random_cap):
+    random_cap.sort()
+    for i in range(len(random_cap) - 1):
+        assert random_cap[i].capture_time < random_cap[i+1].capture_time
+    pass
 
+
+def test_sorting_cap_packets_with_sorted(random_cap):
+    sorted_random_cap = sorted(random_cap)
+    for i in range(len(sorted_random_cap) - 1):
+        assert sorted_random_cap[i].capture_time < sorted_random_cap[i+1].capture_time
+    pass
+
+
+def test_add_two_random_cap():
+    c1, c2 = random_cap(), random_cap()
+    c3 = c1 + c2
+    assert c3.packets == c1.packets + c2.packets
+    pass
+
+
+@fixture()
+def random_cap():
     c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
                            link_layer_type=cap.LinkLayerTypes.ethernet,
                            time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
-    for i in range(random.randint(1, 15)):
+    for i in range(random.randint(1, 50)):
         c.append(cap.CapturedPacket(create_random_byte_array(100, 1500), i))
+    return c
 
-    io = BytesIO(cap.dumps(c))
+
+def test_dumps_capture_with_some_packets(random_cap):
+    io = BytesIO(cap.dumps(random_cap))
     assert io.read(24) == CAP_HEADER
     index = 0
     while True:
         h = io.read(16)
         if h == b'':
             break
-        assert h == struct.pack('>IIII', c[index].seconds, c[index].micro_seconds, len(c[index]),
-                                c[index].original_length)
-        assert io.read(len(c[index])) == c[index].data
+        assert h == struct.pack('>IIII', random_cap[index].seconds, random_cap[index].micro_seconds,
+                                len(random_cap[index]), random_cap[index].original_length)
+        assert io.read(len(random_cap[index])) == random_cap[index].data
         index += 1
-    assert index == len(c)
+    assert index == len(random_cap)
