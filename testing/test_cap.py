@@ -3,9 +3,7 @@ import struct
 import datetime
 import random
 
-import _pytest.python
-from _pytest.python import fixture
-import pytest
+from _pytest.python import fixture, raises
 
 import cap
 
@@ -28,25 +26,25 @@ CAP_HEADER_WITH_PACKET_AND_SWAPPED_ORDER = b'\xd4\xc3\xb2\xa1\x02\x00\x04\x00\x0
 
 
 def create_random_byte_array(minimum, maximum):
-    return b''.join([bytes(random.randint(0, 255)) for i in range(0, random.randint(minimum, maximum))])
+    return b''.join([bytes(random.randint(0, 255)) for _ in range(0, random.randint(minimum, maximum))])
 
 
 def test_loads_empty_file():
-    with _pytest.python.raises(cap.InvalidCapException) as e:
+    with raises(cap.InvalidCapException) as e:
         cap.loads(b"")
     assert e.value.data == b""
 
 
 def test_loads_too_short_data():
     random_string = create_random_byte_array(0, 23)
-    with _pytest.python.raises(cap.InvalidCapException) as e:
+    with raises(cap.InvalidCapException) as e:
         cap.loads(random_string)
     assert e.value.data == random_string
 
 
 def test_loads_cap_with_wrong_magic():
     random_string = b"\xFF" + create_random_byte_array(23, 23)
-    with _pytest.python.raises(cap.InvalidCapException) as e:
+    with raises(cap.InvalidCapException) as e:
         cap.loads(random_string)
     assert e.value.data == random_string
 
@@ -82,6 +80,7 @@ def test_loads_cap_with_packet():
     assert p.micro_seconds == 779000
     assert p.original_length == 9
 
+
 def test_loads_cap_with_packet_and_swapped_order():
     c = cap.loads(CAP_HEADER_WITH_PACKET_AND_SWAPPED_ORDER)
     p = c.packets[0]
@@ -116,6 +115,13 @@ def test_dumps_empty_capture_file_with_swapped_order():
                            link_layer_type=cap.LinkLayerTypes.ethernet,
                            time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
     assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c)
+
+
+def test_sorting_cap_packets(random_cap):
+    random_cap.sort()
+    for i in range(len(random_cap) - 1):
+        assert random_cap[i].capture_time < random_cap[i+1].capture_time
+    pass
 
 
 @fixture()

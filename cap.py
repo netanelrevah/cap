@@ -178,6 +178,11 @@ class NetworkCapture(object):
 
     def append(self, packet):
         self.packets.append(packet)
+        pass
+
+    def sort(self):
+        self.packets.sort(key=lambda p: p.capture_time)
+        pass
 
     def dumps(self):
         file_header = struct.pack(self.header_format(),
