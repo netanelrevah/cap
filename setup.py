@@ -4,7 +4,7 @@ REQUIREMENTS = ['enum34']
 
 setup(
     name='cap',
-    version='0.0.3',
+    version='0.0.4',
     py_modules=['cap'],
     install_requires=REQUIREMENTS,
     url='https://github.com/code-museum/cap',
