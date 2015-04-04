@@ -260,6 +260,9 @@ class CapturedPacket(object):
     def __getitem__(self, item):
         return self.data.__getitem__(item)
 
+    def __lt__(self, other):
+        return self.capture_time < other.capture_time
+
     def dumps(self, swapped_order=False):
         pack_pattern = '>IIII'
         if swapped_order:

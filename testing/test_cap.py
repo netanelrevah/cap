@@ -124,6 +124,13 @@ def test_sorting_cap_packets(random_cap):
     pass
 
 
+def test_sorting_cap_packets_with_sorted(random_cap):
+    sorted_random_cap = sorted(random_cap)
+    for i in range(len(sorted_random_cap) - 1):
+        assert sorted_random_cap[i].capture_time < sorted_random_cap[i+1].capture_time
+    pass
+
+
 @fixture()
 def random_cap():
     c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
