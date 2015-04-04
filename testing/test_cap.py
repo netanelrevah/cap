@@ -5,6 +5,7 @@ import random
 
 import _pytest.python
 from _pytest.python import fixture
+import pytest
 
 import cap
 
@@ -117,7 +118,7 @@ def test_dumps_empty_capture_file_with_swapped_order():
     assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c)
 
 
-@fixture
+@fixture()
 def random_cap():
     c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
                            link_layer_type=cap.LinkLayerTypes.ethernet,
