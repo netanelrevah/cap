@@ -159,6 +159,17 @@ class NetworkCapture(object):
     def time_zone_hours(self):
         return int(self.time_zone.seconds / 3600)
 
+    def copy(self):
+        c = NetworkCapture(self.swapped_order,self.version, self.link_layer_type.value, self.time_zone,
+                           self.max_capture_length)
+        c.packets = self.packets
+        return c
+
+    def __add__(self, other):
+        c = self.copy()
+        c.packets = c.packets + other.packets
+        return c
+
     def header_format(self):
         return NetworkCapture.SWAPPED_ORDER_HEADER_FORMAT if self.swapped_order else NetworkCapture.NATIVE_ORDER_HEADER_FORMAT
 
