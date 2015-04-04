@@ -131,6 +131,13 @@ def test_sorting_cap_packets_with_sorted(random_cap):
     pass
 
 
+def test_add_two_random_cap():
+    c1, c2 = random_cap(), random_cap()
+    c3 = c1 + c2
+    assert c3.packets == c1.packets + c2.packets
+    pass
+
+
 @fixture()
 def random_cap():
     c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
