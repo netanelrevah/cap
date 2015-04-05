@@ -1,4 +1,5 @@
 __author__ = 'netanelrevah'
+__version__ = '0.0.4'
 
 from enum import Enum
 from datetime import datetime, timedelta
