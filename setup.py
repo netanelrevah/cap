@@ -1,6 +1,6 @@
 from setuptools import setup
 
-from cap import __version__
+from _cap import __version__
 
 REQUIREMENTS = ['enum34']
 
@@ -8,6 +8,7 @@ setup(
     name='cap',
     version=__version__,
     py_modules=['cap'],
+    packages=['_cap'],
     install_requires=REQUIREMENTS,
     url='https://github.com/code-museum/cap',
     license='GNU General Public License, version 2',
