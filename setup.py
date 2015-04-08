@@ -1,3 +1,5 @@
+__author__ = 'code-museum'
+
 from setuptools import setup
 
 from _cap import __version__

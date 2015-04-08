@@ -1,4 +1,4 @@
-__author__ = 'netanelrevah'
+__author__ = 'code-museum'
 
 from enum import Enum
 from datetime import datetime, timedelta
