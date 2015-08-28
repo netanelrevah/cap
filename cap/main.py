@@ -1,3 +1,5 @@
+from cap.nice.bits import format_dword, format_byte
+
 __author__ = 'code-museum'
 
 from enum import Enum
@@ -235,29 +237,14 @@ class CapturedPacket(object):
         return dt
 
     @property
-    def is_full(self):
+    def is_fully_captured(self):
         return self.original_length == len(self)
 
     def hex_dump(self):
-        max_index_len = len(str(len(self)))
-        indexes_format = "{:" + str(max_index_len) + "}: "
-
-        hs = []
-        for i in range(len(self) / 16 + 1):
-            first_dword = self.data[i * 16: i * 16 + 8]
-            last_dword = self.data[i * 16 + 8: i * 16 + 16]
-
-            h = indexes_format.format(i * 16)
-            h += ' '.join("{:02x}".format(ord(byte)) for byte in first_dword)
-            if last_dword != '':
-                h += '  '
-                h += indexes_format.format(i * 16 + 8)
-                h += ' '.join("{:02x}".format(ord(byte)) for byte in last_dword)
-            hs.append(h)
-        return '\n'.join(hs)
+        return format_dword(self.data)
 
     def __str__(self):
-        return ''.join("{:02x}".format(ord(byte)) for byte in self.data)
+        return ''.join(format_byte(byte) for byte in self.data)
 
     def __len__(self):
         return len(self.data)
@@ -283,14 +270,14 @@ class CapturedPacket(object):
 
 
 def load(path):
-    io = open(path, 'rb')
-    return loads(io)
+    stream = open(path, 'rb')
+    return loads(stream)
 
 
-def loads(io):
-    if isinstance(io, bytes):
-        io = BytesIO(io)
-    cap_generator = NetworkCaptureLoader(io)
+def loads(data):
+    if isinstance(data, bytes):
+        data = BytesIO(data)
+    cap_generator = NetworkCaptureLoader(data)
     while True:
         try:
             next(cap_generator)
