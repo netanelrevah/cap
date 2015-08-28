@@ -1,12 +1,13 @@
-from cap.nice.bits import format_dword, format_byte
-
 __author__ = 'code-museum'
 
-from enum import Enum
 from datetime import datetime, timedelta
 import time
 import struct
 from io import BytesIO
+
+from enum import Enum
+
+from cap.nice.bits import format_dword, format_byte
 
 
 class InvalidCapException(Exception):
@@ -116,7 +117,8 @@ class CapturedPacketLoader(object):
         if not self.has_header or not self.has_data:
             return None
         if len(self.data) != self.data_length:
-            raise Exception('Packet header invalid, got data length %s instead of %s' % (len(self.data), self.data_length))
+            raise Exception(
+                'Packet header invalid, got data length %s instead of %s' % (len(self.data), self.data_length))
         p = CapturedPacket(self.data, self.seconds, self.micro_seconds, self.original_length)
         p.header = self.packet_header
         return p
@@ -162,7 +164,7 @@ class NetworkCapture(object):
         return int(self.time_zone.seconds / 3600)
 
     def copy(self):
-        c = NetworkCapture(self.swapped_order,self.version, self.link_layer_type.value, self.time_zone,
+        c = NetworkCapture(self.swapped_order, self.version, self.link_layer_type.value, self.time_zone,
                            self.max_capture_length)
         c.packets = self.packets
         return c
