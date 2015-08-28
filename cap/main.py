@@ -1,13 +1,14 @@
 __author__ = 'code-museum'
 
-from datetime import datetime, timedelta
-import time
-import struct
+from datetime import timedelta
+from struct import Struct
 from io import BytesIO
 
 from enum import Enum
 
 from cap.nice.bits import format_dword, format_byte
+from cap.nice.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
+    datetime_from_seconds_and_microseconds
 
 
 class InvalidCapException(Exception):
@@ -22,7 +23,7 @@ class InvalidCapException(Exception):
 
 
 class LinkLayerTypes(Enum):
-    none, ethernet = list(range(0, 2))
+    none, ethernet = tuple(range(0, 2))
 
 
 class NetworkCaptureLoader(object):
@@ -96,10 +97,9 @@ class CapturedPacketLoader(object):
 
     def parse_header(self, packet_header):
         self.packet_header = packet_header
-        packet_packing_pattern = '>IIII'
-        if self.swapped_order:
-            packet_packing_pattern = '<IIII'
-        seconds, micro_seconds, data_length, original_length = struct.unpack(packet_packing_pattern, packet_header)
+        header_struct = CapturedPacket.NATIVE_ORDER_HEADER_STRUCT if not self.swapped_order else \
+            CapturedPacket.SWAPPED_ORDER_HEADER_STRUCT
+        seconds, micro_seconds, data_length, original_length = header_struct.unpack(packet_header)
         self.seconds = seconds
         self.micro_seconds = micro_seconds
         self.data_length = data_length
@@ -126,8 +126,8 @@ class CapturedPacketLoader(object):
 
 class NetworkCapture(object):
     MAGIC_VALUE = 0xa1b2c3d4
-    SWAPPED_ORDER_HEADER_STRUCT = struct.Struct('<IHHiIII')
-    NATIVE_ORDER_HEADER_STRUCT = struct.Struct('>IHHiIII')
+    SWAPPED_ORDER_HEADER_STRUCT = Struct('<IHHiIII')
+    NATIVE_ORDER_HEADER_STRUCT = Struct('>IHHiIII')
 
     def __init__(self, swapped_order=False, version=(2, 4), link_layer_type=0, time_zone=0, max_capture_length=131072):
         self.header = None
@@ -216,6 +216,9 @@ class NetworkCapture(object):
 
 
 class CapturedPacket(object):
+    NATIVE_ORDER_HEADER_STRUCT = Struct('>IIII')
+    SWAPPED_ORDER_HEADER_STRUCT = Struct('<IIII')
+
     def __init__(self, data, seconds=None, micro_seconds=None, original_length=None):
         self.header = None
         self.data = data
@@ -225,9 +228,9 @@ class CapturedPacket(object):
         if micro_seconds is None:
             self.micro_seconds = 0
         if seconds is None:
-            now = datetime.now()
-            self.seconds = time.mktime(now.timetuple())
-            self.micro_seconds = now.microsecond
+            now = current_datetime()
+            self.seconds = seconds_from_datetime(now)
+            self.micro_seconds = microseconds_from_datetime(now)
 
         self.original_length = original_length
         if self.original_length is None:
@@ -235,8 +238,7 @@ class CapturedPacket(object):
 
     @property
     def capture_time(self):
-        dt = datetime.fromtimestamp(self.seconds) + timedelta(microseconds=self.micro_seconds)
-        return dt
+        return datetime_from_seconds_and_microseconds(self.seconds, self.micro_seconds)
 
     @property
     def is_fully_captured(self):
@@ -264,10 +266,8 @@ class CapturedPacket(object):
         return self.capture_time < other.capture_time
 
     def dumps(self, swapped_order=False):
-        pack_pattern = '>IIII'
-        if swapped_order:
-            pack_pattern = '<IIII'
-        header = struct.pack(pack_pattern, self.seconds, self.micro_seconds, len(self), self.original_length)
+        header_struct = self.NATIVE_ORDER_HEADER_STRUCT if not swapped_order else self.SWAPPED_ORDER_HEADER_STRUCT
+        header = header_struct.pack(self.seconds, self.micro_seconds, len(self), self.original_length)
         return header + self.data
 
 
