@@ -6,8 +6,8 @@ from io import BytesIO
 
 from enum import Enum
 
-from cap.nice.bits import format_dword, format_byte
-from cap.nice.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
+from cap.nicer.bits import format_dword, format_byte
+from cap.nicer.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
     datetime_from_seconds_and_microseconds
 
 
@@ -78,36 +78,53 @@ class NetworkCaptureLoader(object):
 
         loader = CapturedPacketLoader(self.swapped_order)
         loader.parse_header(packet_header)
-        loader.data = self._read_next_data(loader.data_length)
+        loader.data = self._read_next_data(loader.packet_header.data_length)
         p = loader.build()
 
         self.cap.packets.append(p)
         return p
 
 
-class CapturedPacketLoader(object):
-    def __init__(self, swapped_order=False):
-        self.swapped_order = swapped_order
-        self.packet_header = None
-        self.seconds = None
-        self.micro_seconds = None
-        self.data_length = None
-        self.original_length = None
-        self.data = b''
+class CapturedPacketHeader(object):
+    NATIVE_ORDER_HEADER_STRUCT = Struct('>IIII')
+    SWAPPED_ORDER_HEADER_STRUCT = Struct('<IIII')
 
-    def parse_header(self, packet_header):
-        self.packet_header = packet_header
-        header_struct = CapturedPacket.NATIVE_ORDER_HEADER_STRUCT if not self.swapped_order else \
-            CapturedPacket.SWAPPED_ORDER_HEADER_STRUCT
-        seconds, micro_seconds, data_length, original_length = header_struct.unpack(packet_header)
+    def __init__(self, seconds, microseconds, data_length, original_length):
         self.seconds = seconds
-        self.micro_seconds = micro_seconds
+        self.microseconds = microseconds
         self.data_length = data_length
         self.original_length = original_length
 
+    @staticmethod
+    def get_header_struct(is_native_order=True):
+        return CapturedPacketHeader.NATIVE_ORDER_HEADER_STRUCT if is_native_order else \
+            CapturedPacketHeader.SWAPPED_ORDER_HEADER_STRUCT
+
+    def pack(self, is_native_order=True):
+        return self.get_header_struct(is_native_order).pack(self.seconds, self.microseconds, self.data_length,
+                                                            self.original_length)
+
+    @classmethod
+    def unpack(cls, data, is_native_order=True):
+        header_struct = CapturedPacketHeader.get_header_struct(is_native_order)
+        seconds, microseconds, data_length, original_length = header_struct.unpack(data)
+        return cls(seconds, microseconds, data_length, original_length)
+
+
+class CapturedPacketLoader(object):
+    def __init__(self, swapped_order=False):
+        self.swapped_order = swapped_order
+        self.packed_packet_header = None
+        self.packet_header = None
+        self.data = b''
+
+    def parse_header(self, packed_packet_header):
+        self.packed_packet_header = packed_packet_header
+        self.packet_header = CapturedPacketHeader.unpack(packed_packet_header, not self.swapped_order)
+
     @property
     def has_header(self):
-        return self.seconds and self.micro_seconds and self.data_length and self.original_length
+        return self.packet_header is not None
 
     @property
     def has_data(self):
@@ -116,11 +133,12 @@ class CapturedPacketLoader(object):
     def build(self):
         if not self.has_header or not self.has_data:
             return None
-        if len(self.data) != self.data_length:
-            raise Exception(
-                'Packet header invalid, got data length %s instead of %s' % (len(self.data), self.data_length))
-        p = CapturedPacket(self.data, self.seconds, self.micro_seconds, self.original_length)
-        p.header = self.packet_header
+        if len(self.data) != self.packet_header.data_length:
+            raise Exception('Packet header invalid, got data length {} instead of {}'.format(
+                len(self.data), self.packet_header.data_length))
+        p = CapturedPacket(self.data, self.packet_header.seconds, self.packet_header.microseconds,
+                           self.packet_header.original_length)
+        p.header = self.packed_packet_header
         return p
 
 

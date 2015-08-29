@@ -12,7 +12,7 @@ REQUIREMENTS = ['enum34']
 setup(
     name='cap',
     version=version,
-    packages=['cap', 'cap.nice'],
+    packages=['cap', 'cap.nicer'],
 
     install_requires=REQUIREMENTS,
 
