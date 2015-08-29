@@ -8,7 +8,7 @@ from enum import Enum
 
 from cap.nicer.bits import format_dword, format_byte
 from cap.nicer.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
-    datetime_from_seconds_and_microseconds
+    datetime_from_seconds_and_microseconds, datetime_from_timestamp
 
 
 class InvalidCapException(Exception):
@@ -85,7 +85,7 @@ class NetworkCaptureLoader(object):
         return p
 
 
-class CapturedPacketHeader(object):
+class CapturedPacketHeaderStruct(object):
     NATIVE_ORDER_HEADER_STRUCT = Struct('>IIII')
     SWAPPED_ORDER_HEADER_STRUCT = Struct('<IIII')
 
@@ -95,10 +95,14 @@ class CapturedPacketHeader(object):
         self.data_length = data_length
         self.original_length = original_length
 
+    @property
+    def capture_time(self):
+        return datetime_from_seconds_and_microseconds(self.seconds, self.microseconds)
+
     @staticmethod
     def get_header_struct(is_native_order=True):
-        return CapturedPacketHeader.NATIVE_ORDER_HEADER_STRUCT if is_native_order else \
-            CapturedPacketHeader.SWAPPED_ORDER_HEADER_STRUCT
+        return CapturedPacketHeaderStruct.NATIVE_ORDER_HEADER_STRUCT if is_native_order else \
+            CapturedPacketHeaderStruct.SWAPPED_ORDER_HEADER_STRUCT
 
     def pack(self, is_native_order=True):
         return self.get_header_struct(is_native_order).pack(self.seconds, self.microseconds, self.data_length,
@@ -106,7 +110,7 @@ class CapturedPacketHeader(object):
 
     @classmethod
     def unpack(cls, data, is_native_order=True):
-        header_struct = CapturedPacketHeader.get_header_struct(is_native_order)
+        header_struct = CapturedPacketHeaderStruct.get_header_struct(is_native_order)
         seconds, microseconds, data_length, original_length = header_struct.unpack(data)
         return cls(seconds, microseconds, data_length, original_length)
 
@@ -120,7 +124,7 @@ class CapturedPacketLoader(object):
 
     def parse_header(self, packed_packet_header):
         self.packed_packet_header = packed_packet_header
-        self.packet_header = CapturedPacketHeader.unpack(packed_packet_header, not self.swapped_order)
+        self.packet_header = CapturedPacketHeaderStruct.unpack(packed_packet_header, not self.swapped_order)
 
     @property
     def has_header(self):
@@ -136,8 +140,7 @@ class CapturedPacketLoader(object):
         if len(self.data) != self.packet_header.data_length:
             raise Exception('Packet header invalid, got data length {} instead of {}'.format(
                 len(self.data), self.packet_header.data_length))
-        p = CapturedPacket(self.data, self.packet_header.seconds, self.packet_header.microseconds,
-                           self.packet_header.original_length)
+        p = CapturedPacket(self.data, self.packet_header.capture_time, self.packet_header.original_length)
         p.header = self.packed_packet_header
         return p
 
@@ -234,29 +237,27 @@ class NetworkCapture(object):
 
 
 class CapturedPacket(object):
-    NATIVE_ORDER_HEADER_STRUCT = Struct('>IIII')
-    SWAPPED_ORDER_HEADER_STRUCT = Struct('<IIII')
-
-    def __init__(self, data, seconds=None, micro_seconds=None, original_length=None):
+    def __init__(self, data, capture_time=None, original_length=None):
         self.header = None
         self.data = data
 
-        self.seconds = seconds
-        self.micro_seconds = micro_seconds
-        if micro_seconds is None:
-            self.micro_seconds = 0
-        if seconds is None:
-            now = current_datetime()
-            self.seconds = seconds_from_datetime(now)
-            self.micro_seconds = microseconds_from_datetime(now)
+        self.capture_time = capture_time
+        if self.capture_time is None:
+            self.capture_time = current_datetime()
+        elif isinstance(self.capture_time, int) or isinstance(self.capture_time, float):
+            self.capture_time = datetime_from_timestamp(self.capture_time)
 
         self.original_length = original_length
         if self.original_length is None:
             self.original_length = len(data)
 
     @property
-    def capture_time(self):
-        return datetime_from_seconds_and_microseconds(self.seconds, self.micro_seconds)
+    def seconds(self):
+        return seconds_from_datetime(self.capture_time)
+
+    @property
+    def microseconds(self):
+        return microseconds_from_datetime(self.capture_time)
 
     @property
     def is_fully_captured(self):
@@ -284,9 +285,8 @@ class CapturedPacket(object):
         return self.capture_time < other.capture_time
 
     def dumps(self, swapped_order=False):
-        header_struct = self.NATIVE_ORDER_HEADER_STRUCT if not swapped_order else self.SWAPPED_ORDER_HEADER_STRUCT
-        header = header_struct.pack(self.seconds, self.micro_seconds, len(self), self.original_length)
-        return header + self.data
+        header_struct = CapturedPacketHeaderStruct(self.seconds, self.microseconds, len(self), self.original_length)
+        return header_struct.pack(not swapped_order) + self.data
 
 
 def load(path):

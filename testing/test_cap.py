@@ -1,3 +1,5 @@
+__author__ = 'netanelrevah'
+
 from io import BytesIO
 import struct
 import datetime
@@ -6,9 +8,6 @@ import random
 from _pytest.python import fixture, raises
 
 import cap
-
-
-__author__ = 'netanelrevah'
 
 MAGIC_WITH_NATIVE_ORDERING = b'\xa1\xb2\xc3\xd4'
 MAGIC_WITH_SWAPPED_ORDERING = b'\xd4\xc3\xb2\xa1'
@@ -77,7 +76,7 @@ def test_loads_cap_with_packet():
     assert p.data == b'123456789'
     assert len(p) == 9
     assert p.seconds == 1427055428.0
-    assert p.micro_seconds == 779000
+    assert p.microseconds == 779000
     assert p.original_length == 9
 
 
@@ -87,7 +86,7 @@ def test_loads_cap_with_packet_and_swapped_order():
     assert p.data == b'123456789'
     assert len(p) == 9
     assert p.seconds == 1427055428.0
-    assert p.micro_seconds == 779000
+    assert p.microseconds == 779000
     assert p.original_length == 9
 
 
@@ -120,14 +119,14 @@ def test_dumps_empty_capture_file_with_swapped_order():
 def test_sorting_cap_packets(random_cap):
     random_cap.sort()
     for i in range(len(random_cap) - 1):
-        assert random_cap[i].capture_time < random_cap[i+1].capture_time
+        assert random_cap[i].capture_time < random_cap[i + 1].capture_time
     pass
 
 
 def test_sorting_cap_packets_with_sorted(random_cap):
     sorted_random_cap = sorted(random_cap)
     for i in range(len(sorted_random_cap) - 1):
-        assert sorted_random_cap[i].capture_time < sorted_random_cap[i+1].capture_time
+        assert sorted_random_cap[i].capture_time < sorted_random_cap[i + 1].capture_time
     pass
 
 
@@ -156,7 +155,7 @@ def test_dumps_capture_with_some_packets(random_cap):
         h = io.read(16)
         if h == b'':
             break
-        assert h == struct.pack('>IIII', random_cap[index].seconds, random_cap[index].micro_seconds,
+        assert h == struct.pack('>IIII', random_cap[index].seconds, random_cap[index].microseconds,
                                 len(random_cap[index]), random_cap[index].original_length)
         assert io.read(len(random_cap[index])) == random_cap[index].data
         index += 1

@@ -12,7 +12,7 @@ def seconds_from_datetime(value):
     """
     :type value: datetime
     """
-    return time.mktime(value.timetuple())
+    return int(time.mktime(value.timetuple()))
 
 
 def microseconds_from_datetime(value):
@@ -20,6 +20,10 @@ def microseconds_from_datetime(value):
     :type value: datetime
     """
     return value.microsecond
+
+
+def datetime_from_timestamp(value):
+    return datetime.fromtimestamp(value)
 
 
 def datetime_from_seconds_and_microseconds(seconds, microseconds):
