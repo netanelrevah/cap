@@ -241,11 +241,8 @@ def loads(data):
     if isinstance(data, bytes):
         data = BytesIO(data)
     cap_generator = NetworkCaptureLoader(data)
-    while True:
-        try:
-            next(cap_generator)
-        except StopIteration:
-            break
+    for _ in cap_generator:
+        pass
     return cap_generator.cap
 
 
