@@ -72,46 +72,14 @@ class NetworkCaptureLoader(object):
     def __next__(self):
         self.initialize()
 
-        packet_header = self._read_next_header()
-        if not packet_header:
+        packed_packet_header = self._read_next_header()
+        if not packed_packet_header:
             raise StopIteration()
 
-        loader = CapturedPacketLoader(self.swapped_order)
-        loader.parse_header(packet_header)
-        loader.data = self._read_next_data(loader.packet_header.data_length)
-        p = loader.build()
-
+        packet_header_struct = CapturedPacketHeaderStruct.unpack(packed_packet_header, not self.swapped_order)
+        packet_data = self._read_next_data(packet_header_struct.data_length)
+        p = CapturedPacket.from_header_and_data(packet_header_struct, packet_data)
         self.cap.packets.append(p)
-        return p
-
-
-class CapturedPacketLoader(object):
-    def __init__(self, swapped_order=False):
-        self.swapped_order = swapped_order
-        self.packed_packet_header = None
-        self.packet_header = None
-        self.data = b''
-
-    def parse_header(self, packed_packet_header):
-        self.packed_packet_header = packed_packet_header
-        self.packet_header = CapturedPacketHeaderStruct.unpack(packed_packet_header, not self.swapped_order)
-
-    @property
-    def has_header(self):
-        return self.packet_header is not None
-
-    @property
-    def has_data(self):
-        return self.data is not None
-
-    def build(self):
-        if not self.has_header or not self.has_data:
-            return None
-        if len(self.data) != self.packet_header.data_length:
-            raise Exception('Packet header invalid, got data length {} instead of {}'.format(
-                len(self.data), self.packet_header.data_length))
-        p = CapturedPacket(self.data, self.packet_header.capture_time, self.packet_header.original_length)
-        p.header = self.packed_packet_header
         return p
 
 
@@ -230,6 +198,15 @@ class CapturedPacket(object):
 
     def dumps(self, swapped_order=False):
         return self._create_struct_header().pack(not swapped_order) + self.data
+
+    @staticmethod
+    def from_header_and_data(header_struct, data):
+        if len(data) != header_struct.data_length:
+            raise Exception('Packet header invalid, got data length {} instead of {}'.format(
+                len(data), header_struct.data_length))
+        p = CapturedPacket(data, header_struct.capture_time, header_struct.original_length)
+        p.header = header_struct
+        return p
 
 
 def load(path):
