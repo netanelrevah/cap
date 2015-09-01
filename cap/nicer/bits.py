@@ -1,12 +1,14 @@
+from cap.nicer.slices import slice_by_size
+
 __author__ = 'code-museum'
 
 
 def format_byte(byte):
-    return "{:02x}".format(ord(bytes(byte[:1])))
+    return byte[:1].encode('hex')
 
 
 def format_dword(dword):
-    return ' '.join(format_byte(byte) for byte in bytes(dword)[0:8])
+    return ' '.join(slice_by_size(dword.encode('hex'), 2))
 
 
 def format_bytes(data):
@@ -14,14 +16,15 @@ def format_bytes(data):
     max_digits_for_index = len(str(len(data)))
     indexes_format = "{:" + str(max_digits_for_index) + "}: "
 
-    lines = []
-    for i in range(len(data) / 16 + 1):
-        first_dword = data[i * 16: i * 16 + 8]
-        last_dword = data[i * 16 + 8: i * 16 + 16]
+    dwords = []
+    for i in range(0, len(data), 8):
+        dword = data[i: i + 8]
+        dwords.append(indexes_format.format(i) + format_dword(dword))
 
-        line = ''
-        line += indexes_format.format(i * 16) + format_dword(first_dword)
-        line += '  ' + indexes_format.format(i * 16 + 8) + format_dword(last_dword) if last_dword else ''
+    lines = []
+    for i in range(0, len(dwords), 2):
+        line = dwords[i]
+        line += ' ' + dwords[i + 1] if i + 1 < len(dwords) else ''
         lines.append(line)
 
     return '\n'.join(lines)
