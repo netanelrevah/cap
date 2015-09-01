@@ -1,14 +1,14 @@
-__author__ = 'code-museum'
+__author__ = 'netanelrevah'
 
 from datetime import timedelta
-from struct import Struct
 from io import BytesIO
 
 from enum import Enum
 
+from cap.fmt import CapturedPacketHeaderStruct, NetworkCaptureHeaderStruct
 from cap.nicer.bits import format_dword, format_byte
 from cap.nicer.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
-    datetime_from_seconds_and_microseconds, datetime_from_timestamp
+    datetime_from_timestamp, hours_from_timedelta, hours_delta
 
 
 class InvalidCapException(Exception):
@@ -44,12 +44,13 @@ class NetworkCaptureLoader(object):
             raise InvalidCapException(header + self.io.read())
         if header.startswith(NetworkCaptureLoader.SWAPPED_ORDERING_MAGIC):
             self.swapped_order = True
-            unpacked_header = NetworkCapture.SWAPPED_ORDER_HEADER_STRUCT.unpack(header)
-        else:
-            unpacked_header = NetworkCapture.NATIVE_ORDER_HEADER_STRUCT.unpack(header)
-        version = (unpacked_header[1], unpacked_header[2])
-        self.cap = NetworkCapture(self.swapped_order, version, unpacked_header[6], unpacked_header[3],
-                                  unpacked_header[5] / 2)
+
+        header_struct = NetworkCaptureHeaderStruct.unpack(header, not self.swapped_order)
+
+        version = (header_struct.major_version, header_struct.minor_version)
+        self.cap = NetworkCapture(self.swapped_order, version, header_struct.link_layer_type,
+                                  header_struct.time_zone_hours,
+                                  header_struct.max_capture_length_octets / 2)
         self.cap.header = header
         self.initialized = True
 
@@ -85,36 +86,6 @@ class NetworkCaptureLoader(object):
         return p
 
 
-class CapturedPacketHeaderStruct(object):
-    NATIVE_ORDER_HEADER_STRUCT = Struct('>IIII')
-    SWAPPED_ORDER_HEADER_STRUCT = Struct('<IIII')
-
-    def __init__(self, seconds, microseconds, data_length, original_length):
-        self.seconds = seconds
-        self.microseconds = microseconds
-        self.data_length = data_length
-        self.original_length = original_length
-
-    @property
-    def capture_time(self):
-        return datetime_from_seconds_and_microseconds(self.seconds, self.microseconds)
-
-    @staticmethod
-    def get_header_struct(is_native_order=True):
-        return CapturedPacketHeaderStruct.NATIVE_ORDER_HEADER_STRUCT if is_native_order else \
-            CapturedPacketHeaderStruct.SWAPPED_ORDER_HEADER_STRUCT
-
-    def pack(self, is_native_order=True):
-        return self.get_header_struct(is_native_order).pack(self.seconds, self.microseconds, self.data_length,
-                                                            self.original_length)
-
-    @classmethod
-    def unpack(cls, data, is_native_order=True):
-        header_struct = CapturedPacketHeaderStruct.get_header_struct(is_native_order)
-        seconds, microseconds, data_length, original_length = header_struct.unpack(data)
-        return cls(seconds, microseconds, data_length, original_length)
-
-
 class CapturedPacketLoader(object):
     def __init__(self, swapped_order=False):
         self.swapped_order = swapped_order
@@ -147,17 +118,13 @@ class CapturedPacketLoader(object):
 
 class NetworkCapture(object):
     MAGIC_VALUE = 0xa1b2c3d4
-    SWAPPED_ORDER_HEADER_STRUCT = Struct('<IHHiIII')
-    NATIVE_ORDER_HEADER_STRUCT = Struct('>IHHiIII')
 
     def __init__(self, swapped_order=False, version=(2, 4), link_layer_type=0, time_zone=0, max_capture_length=131072):
         self.header = None
         self.swapped_order = swapped_order
         self.version = version
 
-        if not isinstance(time_zone, timedelta):
-            time_zone = timedelta(hours=time_zone)
-        self.time_zone = time_zone
+        self.time_zone = hours_delta(time_zone)
 
         if not isinstance(link_layer_type, LinkLayerTypes):
             link_layer_type = LinkLayerTypes(link_layer_type)
@@ -165,24 +132,6 @@ class NetworkCapture(object):
 
         self.max_capture_length = max_capture_length
         self.packets = []
-
-    @property
-    def max_capture_length_octets(self):
-        return self.max_capture_length * 2
-
-    @property
-    def major_version(self):
-        major, _ = self.version
-        return major
-
-    @property
-    def minor_version(self):
-        _, minor = self.version
-        return minor
-
-    @property
-    def time_zone_hours(self):
-        return int(self.time_zone.seconds / 3600)
 
     def copy(self):
         c = NetworkCapture(self.swapped_order, self.version, self.link_layer_type.value, self.time_zone,
@@ -194,9 +143,6 @@ class NetworkCapture(object):
         c = self.copy()
         c.packets = c.packets + other.packets
         return c
-
-    def header_struct(self):
-        return NetworkCapture.SWAPPED_ORDER_HEADER_STRUCT if self.swapped_order else NetworkCapture.NATIVE_ORDER_HEADER_STRUCT
 
     def __len__(self):
         return len(self.packets)
@@ -220,12 +166,16 @@ class NetworkCapture(object):
         self.packets.sort(key=lambda p: p.capture_time)
         pass
 
+    def _create_header_struct(self):
+        major_version, minor_version = self.version
+        time_zone_hours = int(hours_from_timedelta(self.time_zone))
+        max_capture_length_octets = self.max_capture_length * 2
+        link_layer_type = self.link_layer_type.value
+        return NetworkCaptureHeaderStruct(NetworkCapture.MAGIC_VALUE, major_version, minor_version, time_zone_hours, 0,
+                                          max_capture_length_octets, link_layer_type)
+
     def dumps(self):
-        file_header = self.header_struct().pack(NetworkCapture.MAGIC_VALUE,
-                                                self.major_version, self.minor_version,
-                                                self.time_zone_hours, 0,
-                                                self.max_capture_length_octets,
-                                                self.link_layer_type.value)
+        file_header = self._create_header_struct().pack(not self.swapped_order)
 
         packet_dump = []
         for packet in self:
