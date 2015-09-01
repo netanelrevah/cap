@@ -1,6 +1,6 @@
-from cap.nicer.slices import slice_by_size
+__author__ = 'netanelrevah'
 
-__author__ = 'code-museum'
+from cap.nicer.slices import slice_by_size
 
 
 def format_byte(byte):

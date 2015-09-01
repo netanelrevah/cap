@@ -1,2 +1,2 @@
-__author__ = 'code-museum'
+__author__ = 'netanelrevah'
 __version__ = '0.0.5'

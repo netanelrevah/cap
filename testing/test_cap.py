@@ -1,6 +1,3 @@
-from cap.structure import CapturedPacketHeaderSection
-from cap.nicer.times import datetime_from_timestamp, seconds_from_datetime, microseconds_from_datetime
-
 __author__ = 'netanelrevah'
 
 from io import BytesIO
@@ -10,6 +7,7 @@ import random
 
 from _pytest.python import fixture, raises
 
+from cap.nicer.times import datetime_from_timestamp, seconds_from_datetime, microseconds_from_datetime
 import cap
 
 MAGIC_WITH_NATIVE_ORDERING = b'\xa1\xb2\xc3\xd4'

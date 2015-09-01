@@ -1,4 +1,4 @@
-__author__ = '$Author'
+__author__ = 'netanelrevah'
 
 
 def slice_by_size(slice_able, size):

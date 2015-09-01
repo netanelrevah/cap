@@ -1,4 +1,4 @@
-__author__ = 'code-museum'
+__author__ = 'netanelrevah'
 
 from cap.version import __version__
 from cap.logics import InvalidCapException
