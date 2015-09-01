@@ -47,3 +47,9 @@ class NetworkCaptureHeaderStruct(DefinedStruct):
     def _get_values_tuple(self):
         return self.MAGIC_VALUE, self.major_version, self.minor_version, self.time_zone_hours, 0, \
             self.max_capture_length_octets, self.link_layer_type
+
+
+class CapturedPacketSection(object):
+    def __init__(self):
+        self.header = None
+        self.data = None

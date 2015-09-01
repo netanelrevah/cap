@@ -4,7 +4,7 @@ from io import BytesIO
 
 from enum import Enum
 
-from cap.structure import CapturedPacketHeaderStruct, NetworkCaptureHeaderStruct
+from cap.structure import CapturedPacketHeaderStruct, NetworkCaptureHeaderStruct, CapturedPacketSection
 from cap.nicer.bits import format_dword, format_byte
 from cap.nicer.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
     datetime_from_timestamp, hours_from_timedelta, hours_delta
@@ -82,12 +82,6 @@ class NetworkCaptureLoader(object):
         p = CapturedPacket.from_captured_packet_section(captured_packet_section)
         self.cap.packets.append(p)
         return p
-
-
-class CapturedPacketSection(object):
-    def __init__(self):
-        self.header = None
-        self.data = None
 
 
 class NetworkCapture(object):
