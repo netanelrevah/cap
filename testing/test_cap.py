@@ -1,3 +1,6 @@
+from cap.fmt import CapturedPacketHeaderStruct
+from cap.nicer.times import datetime_from_timestamp, seconds_from_datetime, microseconds_from_datetime
+
 __author__ = 'netanelrevah'
 
 from io import BytesIO
@@ -75,8 +78,7 @@ def test_loads_cap_with_packet():
     p = c.packets[0]
     assert p.data == b'123456789'
     assert len(p) == 9
-    assert p.seconds == 1427055428.0
-    assert p.microseconds == 779000
+    assert p.capture_time == datetime_from_timestamp(1427055428.779000)
     assert p.original_length == 9
 
 
@@ -85,8 +87,7 @@ def test_loads_cap_with_packet_and_swapped_order():
     p = c.packets[0]
     assert p.data == b'123456789'
     assert len(p) == 9
-    assert p.seconds == 1427055428.0
-    assert p.microseconds == 779000
+    assert p.capture_time == datetime_from_timestamp(1427055428.779000)
     assert p.original_length == 9
 
 
@@ -155,7 +156,9 @@ def test_dumps_capture_with_some_packets(random_cap):
         h = io.read(16)
         if h == b'':
             break
-        assert h == struct.pack('>IIII', random_cap[index].seconds, random_cap[index].microseconds,
+        assert h == struct.pack('>IIII',
+                                seconds_from_datetime(random_cap[index].capture_time),
+                                microseconds_from_datetime(random_cap[index].capture_time),
                                 len(random_cap[index]), random_cap[index].original_length)
         assert io.read(len(random_cap[index])) == random_cap[index].data
         index += 1

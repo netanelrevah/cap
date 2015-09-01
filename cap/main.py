@@ -202,14 +202,6 @@ class CapturedPacket(object):
             self.original_length = len(data)
 
     @property
-    def seconds(self):
-        return seconds_from_datetime(self.capture_time)
-
-    @property
-    def microseconds(self):
-        return microseconds_from_datetime(self.capture_time)
-
-    @property
     def is_fully_captured(self):
         return self.original_length == len(self)
 
@@ -234,9 +226,13 @@ class CapturedPacket(object):
     def __lt__(self, other):
         return self.capture_time < other.capture_time
 
+    def _create_struct_header(self):
+        seconds = seconds_from_datetime(self.capture_time)
+        microseconds = microseconds_from_datetime(self.capture_time)
+        return CapturedPacketHeaderStruct(seconds, microseconds, len(self), self.original_length)
+
     def dumps(self, swapped_order=False):
-        header_struct = CapturedPacketHeaderStruct(self.seconds, self.microseconds, len(self), self.original_length)
-        return header_struct.pack(not swapped_order) + self.data
+        return self._create_struct_header().pack(not swapped_order) + self.data
 
 
 def load(path):
