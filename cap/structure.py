@@ -6,7 +6,7 @@ from struct import Struct
 from cap.nicer.times import datetime_from_seconds_and_microseconds
 
 
-class CapturedPacketHeaderStruct(DefinedStruct):
+class CapturedPacketHeaderSection(DefinedStruct):
     NATIVE_ORDER_HEADER_STRUCT = Struct('>IIII')
     SWAPPED_ORDER_HEADER_STRUCT = Struct('<IIII')
 
@@ -27,7 +27,7 @@ class CapturedPacketHeaderStruct(DefinedStruct):
                 self.original_length)
 
 
-class NetworkCaptureHeaderStruct(DefinedStruct):
+class NetworkCaptureHeaderSection(DefinedStruct):
     NATIVE_ORDER_HEADER_STRUCT = Struct('>IHHiIII')
     SWAPPED_ORDER_HEADER_STRUCT = Struct('<IHHiIII')
 

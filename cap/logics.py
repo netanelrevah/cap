@@ -4,7 +4,7 @@ from io import BytesIO
 
 from enum import Enum
 
-from cap.structure import CapturedPacketHeaderStruct, NetworkCaptureHeaderStruct, CapturedPacketSection
+from cap.structure import CapturedPacketHeaderSection, NetworkCaptureHeaderSection, CapturedPacketSection
 from cap.nicer.bits import format_dword, format_byte
 from cap.nicer.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
     datetime_from_timestamp, hours_from_timedelta, hours_delta
@@ -44,7 +44,7 @@ class NetworkCaptureLoader(object):
         if header.startswith(NetworkCaptureLoader.SWAPPED_ORDERING_MAGIC):
             self.swapped_order = True
 
-        header_struct = NetworkCaptureHeaderStruct.unpack(header, not self.swapped_order)
+        header_struct = NetworkCaptureHeaderSection.unpack(header, not self.swapped_order)
 
         version = (header_struct.major_version, header_struct.minor_version)
         self.cap = NetworkCapture(self.swapped_order, version, header_struct.link_layer_type,
@@ -77,7 +77,8 @@ class NetworkCaptureLoader(object):
             raise StopIteration()
 
         captured_packet_section = CapturedPacketSection()
-        captured_packet_section.header = CapturedPacketHeaderStruct.unpack(packed_packet_header, not self.swapped_order)
+        captured_packet_section.header = CapturedPacketHeaderSection.unpack(packed_packet_header,
+                                                                            not self.swapped_order)
         captured_packet_section.data = self._read_next_data(captured_packet_section.header.data_length)
         p = CapturedPacket.from_captured_packet_section(captured_packet_section)
         self.cap.packets.append(p)
@@ -137,8 +138,8 @@ class NetworkCapture(object):
         time_zone_hours = int(hours_from_timedelta(self.time_zone))
         max_capture_length_octets = self.max_capture_length * 2
         link_layer_type = self.link_layer_type.value
-        return NetworkCaptureHeaderStruct(major_version, minor_version, time_zone_hours, max_capture_length_octets,
-                                          link_layer_type)
+        return NetworkCaptureHeaderSection(major_version, minor_version, time_zone_hours, max_capture_length_octets,
+                                           link_layer_type)
 
     def dumps(self):
         file_header = self._create_header_struct().pack(not self.swapped_order)
@@ -195,7 +196,7 @@ class CapturedPacket(object):
     def _create_struct_header(self):
         seconds = seconds_from_datetime(self.capture_time)
         microseconds = microseconds_from_datetime(self.capture_time)
-        return CapturedPacketHeaderStruct(seconds, microseconds, len(self), self.original_length)
+        return CapturedPacketHeaderSection(seconds, microseconds, len(self), self.original_length)
 
     def dumps(self, swapped_order=False):
         return self._create_struct_header().pack(not swapped_order) + self.data

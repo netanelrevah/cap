@@ -1,4 +1,4 @@
-from cap.structure import CapturedPacketHeaderStruct
+from cap.structure import CapturedPacketHeaderSection
 from cap.nicer.times import datetime_from_timestamp, seconds_from_datetime, microseconds_from_datetime
 
 __author__ = 'netanelrevah'
