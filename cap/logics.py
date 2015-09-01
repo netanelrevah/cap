@@ -4,7 +4,7 @@ from io import BytesIO
 
 from enum import Enum
 
-from cap.fmt import CapturedPacketHeaderStruct, NetworkCaptureHeaderStruct
+from cap.structure import CapturedPacketHeaderStruct, NetworkCaptureHeaderStruct
 from cap.nicer.bits import format_dword, format_byte
 from cap.nicer.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
     datetime_from_timestamp, hours_from_timedelta, hours_delta
