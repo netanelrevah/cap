@@ -1,6 +1,5 @@
 __author__ = 'netanelrevah'
 
-from datetime import timedelta
 from io import BytesIO
 
 from enum import Enum
