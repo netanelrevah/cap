@@ -76,11 +76,18 @@ class NetworkCaptureLoader(object):
         if not packed_packet_header:
             raise StopIteration()
 
-        packet_header_struct = CapturedPacketHeaderStruct.unpack(packed_packet_header, not self.swapped_order)
-        packet_data = self._read_next_data(packet_header_struct.data_length)
-        p = CapturedPacket.from_header_and_data(packet_header_struct, packet_data)
+        captured_packet_section = CapturedPacketSection()
+        captured_packet_section.header = CapturedPacketHeaderStruct.unpack(packed_packet_header, not self.swapped_order)
+        captured_packet_section.data = self._read_next_data(captured_packet_section.header.data_length)
+        p = CapturedPacket.from_captured_packet_section(captured_packet_section)
         self.cap.packets.append(p)
         return p
+
+
+class CapturedPacketSection(object):
+    def __init__(self):
+        self.header = None
+        self.data = None
 
 
 class NetworkCapture(object):
@@ -200,12 +207,13 @@ class CapturedPacket(object):
         return self._create_struct_header().pack(not swapped_order) + self.data
 
     @staticmethod
-    def from_header_and_data(header_struct, data):
-        if len(data) != header_struct.data_length:
+    def from_captured_packet_section(captured_packet_section):
+        if len(captured_packet_section.data) != captured_packet_section.header.data_length:
             raise Exception('Packet header invalid, got data length {} instead of {}'.format(
-                len(data), header_struct.data_length))
-        p = CapturedPacket(data, header_struct.capture_time, header_struct.original_length)
-        p.header = header_struct
+                len(captured_packet_section.data), captured_packet_section.header.data_length))
+        p = CapturedPacket(captured_packet_section.data, captured_packet_section.header.capture_time,
+                           captured_packet_section.header.original_length)
+        p.header = captured_packet_section.header
         return p
 
 
