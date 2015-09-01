@@ -1,8 +1,8 @@
-from cap.nicer.structs import DefinedStruct
-
 __author__ = 'netanelrevah'
 
 from struct import Struct
+
+from cap.nicer.structs import DefinedStruct
 from cap.nicer.times import datetime_from_seconds_and_microseconds
 
 
@@ -46,7 +46,7 @@ class NetworkCaptureHeaderSection(DefinedStruct):
 
     def _get_values_tuple(self):
         return self.MAGIC_VALUE, self.major_version, self.minor_version, self.time_zone_hours, 0, \
-            self.max_capture_length_octets, self.link_layer_type
+               self.max_capture_length_octets, self.link_layer_type
 
 
 class CapturedPacketSection(object):
