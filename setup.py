@@ -1,4 +1,4 @@
-__author__ = 'code-museum'
+__author__ = 'netanelrevah'
 
 from setuptools import setup
 
@@ -16,10 +16,10 @@ setup(
 
     install_requires=REQUIREMENTS,
 
-    author='the-curator',
-    author_email='the-curator@users.noreply.github.com',
+    author='netanelrevah',
+    author_email='netanelrevah@users.noreply.github.com',
     description='Cap: lightweight package for use network captures',
     license='GNU General Public License, version 2',
     keywords="network capture packet pcap",
-    url='https://github.com/the-curator/cap'
+    url='https://github.com/netanelrevah/cap'
 )
