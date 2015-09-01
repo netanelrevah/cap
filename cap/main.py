@@ -117,8 +117,6 @@ class CapturedPacketLoader(object):
 
 
 class NetworkCapture(object):
-    MAGIC_VALUE = 0xa1b2c3d4
-
     def __init__(self, swapped_order=False, version=(2, 4), link_layer_type=0, time_zone=0, max_capture_length=131072):
         self.header = None
         self.swapped_order = swapped_order
@@ -171,8 +169,8 @@ class NetworkCapture(object):
         time_zone_hours = int(hours_from_timedelta(self.time_zone))
         max_capture_length_octets = self.max_capture_length * 2
         link_layer_type = self.link_layer_type.value
-        return NetworkCaptureHeaderStruct(NetworkCapture.MAGIC_VALUE, major_version, minor_version, time_zone_hours, 0,
-                                          max_capture_length_octets, link_layer_type)
+        return NetworkCaptureHeaderStruct(major_version, minor_version, time_zone_hours, max_capture_length_octets,
+                                          link_layer_type)
 
     def dumps(self):
         file_header = self._create_header_struct().pack(not self.swapped_order)
