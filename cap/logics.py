@@ -5,7 +5,7 @@ from io import BytesIO
 from enum import Enum
 
 from cap.structure import CapturedPacketHeaderSection, NetworkCaptureHeaderSection, CapturedPacketSection
-from cap.nicer.bits import format_dword, format_byte
+from cap.nicer.bits import format_byte, format_bytes
 from cap.nicer.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
     datetime_from_timestamp, hours_from_timedelta, hours_delta
 
@@ -173,7 +173,7 @@ class CapturedPacket(object):
         return self.original_length == len(self)
 
     def hex_dump(self):
-        return format_dword(self.data)
+        return format_bytes(self.data)
 
     def __str__(self):
         return ''.join(format_byte(byte) for byte in self.data)
