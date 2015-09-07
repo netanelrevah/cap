@@ -1,3 +1,5 @@
+from cap.fmt import PacketCaptureHeaderFormat
+
 __author__ = 'netanelrevah'
 
 from io import BytesIO
@@ -30,50 +32,39 @@ def create_random_byte_array(minimum, maximum):
 
 
 def test_loads_empty_file():
-    with raises(cap.InvalidCapException) as e:
+    with raises(Exception) as e:
         cap.loads(b"")
-    assert e.value.data == b""
 
 
 def test_loads_too_short_data():
     random_string = create_random_byte_array(0, 23)
-    with raises(cap.InvalidCapException) as e:
+    with raises(Exception) as e:
         cap.loads(random_string)
-    assert e.value.data == random_string
 
 
 def test_loads_cap_with_wrong_magic():
     random_string = b"\xFF" + create_random_byte_array(23, 23)
-    with raises(cap.InvalidCapException) as e:
+    with raises(Exception) as e:
         cap.loads(random_string)
-    assert e.value.data == random_string
 
 
 def test_loads_empty_cap():
     c = cap.loads(CAP_HEADER)
-    assert c.swapped_order is False
-    assert c.version == (2, 4)
     assert c.link_layer_type == cap.LinkLayerTypes.ethernet
-    assert c.time_zone == datetime.timedelta(hours=0)
-    assert c.max_capture_length == 131072
     assert len(c) == 0
     pass
 
 
 def test_loads_empty_cap_with_big_endian():
     c = cap.loads(CAP_HEADER_WITH_SWAPPED_ORDER)
-    assert c.swapped_order is True
-    assert c.version == (2, 4)
     assert c.link_layer_type == cap.LinkLayerTypes.ethernet
-    assert c.time_zone == datetime.timedelta(hours=0)
-    assert c.max_capture_length == 131072
     assert len(c) == 0
     pass
 
 
 def test_loads_cap_with_packet():
     c = cap.loads(CAP_HEADER_WITH_PACKET)
-    p = c.packets[0]
+    p = c.captured_packets[0]
     assert p.data == b'123456789'
     assert len(p) == 9
     assert p.capture_time == datetime_from_timestamp(1427055428.779000)
@@ -82,37 +73,21 @@ def test_loads_cap_with_packet():
 
 def test_loads_cap_with_packet_and_swapped_order():
     c = cap.loads(CAP_HEADER_WITH_PACKET_AND_SWAPPED_ORDER)
-    p = c.packets[0]
+    p = c.captured_packets[0]
     assert p.data == b'123456789'
     assert len(p) == 9
     assert p.capture_time == datetime_from_timestamp(1427055428.779000)
     assert p.original_length == 9
 
 
-def test_create_new_capture_file():
-    c = cap.NetworkCapture(swapped_order=True, version=(6, 7),
-                           link_layer_type=cap.LinkLayerTypes.ethernet,
-                           time_zone=datetime.timedelta(hours=0), max_capture_length=123456)
-    assert c.swapped_order is True
-    assert c.version == (6, 7)
-    assert c.link_layer_type == cap.LinkLayerTypes.ethernet
-    assert c.time_zone == datetime.timedelta(hours=0)
-    assert c.max_capture_length == 123456
-    assert len(c) == 0
-
-
 def test_dumps_empty_capture_file():
-    c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
-                           link_layer_type=cap.LinkLayerTypes.ethernet,
-                           time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
+    c = cap.NetworkCapture([], 1)
     assert CAP_HEADER == cap.dumps(c)
 
 
 def test_dumps_empty_capture_file_with_swapped_order():
-    c = cap.NetworkCapture(swapped_order=True, version=(2, 4),
-                           link_layer_type=cap.LinkLayerTypes.ethernet,
-                           time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
-    assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c)
+    c = cap.NetworkCapture([], 1)
+    assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c, is_native_order=False)
 
 
 def test_sorting_cap_packets(random_cap):
@@ -132,15 +107,12 @@ def test_sorting_cap_packets_with_sorted(random_cap):
 def test_add_two_random_cap():
     c1, c2 = random_cap(), random_cap()
     c3 = c1 + c2
-    assert c3.packets == c1.packets + c2.packets
-    pass
+    assert c3.captured_packets == c1.captured_packets + c2.captured_packets
 
 
 @fixture()
 def random_cap():
-    c = cap.NetworkCapture(swapped_order=False, version=(2, 4),
-                           link_layer_type=cap.LinkLayerTypes.ethernet,
-                           time_zone=datetime.timedelta(hours=0), max_capture_length=131072)
+    c = cap.NetworkCapture([], 1)
     for i in range(random.randint(1, 50)):
         c.append(cap.CapturedPacket(create_random_byte_array(100, 1500), i))
     return c

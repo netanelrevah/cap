@@ -1,156 +1,55 @@
-__author__ = 'netanelrevah'
-
-from io import BytesIO
-
 from enum import Enum
 
-from cap.structure import CapturedPacketHeaderSection, NetworkCaptureHeaderSection, CapturedPacketSection
 from cap.nicer.bits import format_byte, format_bytes
-from cap.nicer.times import seconds_from_datetime, microseconds_from_datetime, current_datetime, \
-    datetime_from_timestamp, hours_from_timedelta, hours_delta
+from cap.nicer.times import current_datetime, \
+    datetime_from_timestamp
 
-
-class InvalidCapException(Exception):
-    def __init__(self, data):
-        self.data = data
-        if data == "":
-            super(InvalidCapException, self).__init__("Got empty stream. Cap must have at least 24 bytes")
-        elif len(data) < 24:
-            super(InvalidCapException, self).__init__("Data too short: len('%s') == %d" % (data, len(data)))
-        else:
-            super(InvalidCapException, self).__init__("Magic is not valid: %r" % (data[0:4]))
+__author__ = 'netanelrevah'
 
 
 class LinkLayerTypes(Enum):
     none, ethernet = tuple(range(0, 2))
 
 
-class NetworkCaptureLoader(object):
-    VALID_MAGICS = [b'\xa1\xb2\xc3\xd4', b'\xa1\xb2\x3c\xd4']
-    SWAPPED_ORDERING_MAGIC = b'\xd4\xc3\xb2\xa1'
-
-    def __init__(self, io):
-        self.io = io
-        self.cap = None
-        self.initialized = False
-        self.swapped_order = False
-        pass
-
-    def _initialize(self):
-        header = self.io.read(24)
-        if len(header) < 24 or ((header[:4] not in NetworkCaptureLoader.VALID_MAGICS) and
-                                    (header[3::-1] not in NetworkCaptureLoader.VALID_MAGICS)):
-            raise InvalidCapException(header + self.io.read())
-        if header.startswith(NetworkCaptureLoader.SWAPPED_ORDERING_MAGIC):
-            self.swapped_order = True
-
-        header_struct = NetworkCaptureHeaderSection.unpack(header, not self.swapped_order)
-
-        version = (header_struct.major_version, header_struct.minor_version)
-        self.cap = NetworkCapture(self.swapped_order, version, header_struct.link_layer_type,
-                                  header_struct.time_zone_hours,
-                                  header_struct.max_capture_length_octets / 2)
-        self.cap.header = header
-        self.initialized = True
-
-    def initialize(self):
-        if not self.initialized:
-            self._initialize()
-
-    def _read_next_header(self):
-        return self.io.read(16)
-
-    def _read_next_data(self, data_length):
-        return self.io.read(data_length)
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        return self.__next__()
-
-    def __next__(self):
-        self.initialize()
-
-        packed_packet_header = self._read_next_header()
-        if not packed_packet_header:
-            raise StopIteration()
-
-        captured_packet_section = CapturedPacketSection()
-        captured_packet_section.header = CapturedPacketHeaderSection.unpack(packed_packet_header,
-                                                                            not self.swapped_order)
-        captured_packet_section.data = self._read_next_data(captured_packet_section.header.data_length)
-        p = CapturedPacket.from_captured_packet_section(captured_packet_section)
-        self.cap.packets.append(p)
-        return p
-
-
 class NetworkCapture(object):
-    def __init__(self, swapped_order=False, version=(2, 4), link_layer_type=0, time_zone=0, max_capture_length=131072):
-        self.header = None
-        self.swapped_order = swapped_order
-        self.version = version
-
-        self.time_zone = hours_delta(time_zone)
-
+    def __init__(self, captured_packets=None, link_layer_type=None):
         if not isinstance(link_layer_type, LinkLayerTypes):
             link_layer_type = LinkLayerTypes(link_layer_type)
         self.link_layer_type = LinkLayerTypes(link_layer_type)
 
-        self.max_capture_length = max_capture_length
-        self.packets = []
+        self.captured_packets = captured_packets if captured_packets is not None else []
 
     def copy(self):
-        c = NetworkCapture(self.swapped_order, self.version, self.link_layer_type.value, self.time_zone,
-                           self.max_capture_length)
-        c.packets = self.packets
-        return c
+        copied_packets = [p.copy() for p in self.captured_packets]
+        return NetworkCapture(copied_packets, self.link_layer_type)
 
     def __add__(self, other):
         c = self.copy()
-        c.packets = c.packets + other.packets
+        c.captured_packets += other.captured_packets
         return c
 
     def __len__(self):
-        return len(self.packets)
+        return len(self.captured_packets)
 
     def __getitem__(self, index):
-        return self.packets[index]
+        return self.captured_packets[index]
 
     def __iter__(self):
-        return self.packets.__iter__()
+        return self.captured_packets.__iter__()
 
     def __repr__(self):
         if len(self) == 0:
-            return '<CaptureFile - Empty cap>'
-        return '<CaptureFile - %d packets from %s to %s>' % (len(self), self[0].capture_time, self[-1].capture_time)
+            return '<NetworkCapture - Empty>'
+        return '<CaptureFile - {} packets from {} to {}>'.format(
+            len(self), self[0].capture_time, self[-1].capture_time)
 
     def append(self, packet):
-        self.packets.append(packet)
+        self.captured_packets.append(packet)
         pass
 
     def sort(self):
-        self.packets.sort(key=lambda p: p.capture_time)
+        self.captured_packets.sort(key=lambda p: p.capture_time)
         pass
-
-    def _create_header_struct(self):
-        major_version, minor_version = self.version
-        time_zone_hours = int(hours_from_timedelta(self.time_zone))
-        max_capture_length_octets = self.max_capture_length * 2
-        link_layer_type = self.link_layer_type.value
-        return NetworkCaptureHeaderSection(major_version, minor_version, time_zone_hours, max_capture_length_octets,
-                                           link_layer_type)
-
-    def dumps(self):
-        file_header = self._create_header_struct().pack(not self.swapped_order)
-
-        packet_dump = []
-        for packet in self:
-            packet_dump.append(packet.dumps(self.swapped_order))
-        ret = file_header
-        for pd in packet_dump:
-            ret += pd
-        return ret
 
 
 class CapturedPacket(object):
@@ -168,12 +67,19 @@ class CapturedPacket(object):
         if self.original_length is None:
             self.original_length = len(data)
 
+    def copy(self):
+        return CapturedPacket(self.data, self.capture_time, self.original_length)
+
     @property
     def is_fully_captured(self):
         return self.original_length == len(self)
 
     def hex_dump(self):
         return format_bytes(self.data)
+
+    def __eq__(self, other):
+        return self.data, self.original_length, self.capture_time, self.capture_time == \
+            other.data, other.original_length, other.capture_time, other.capture_time
 
     def __str__(self):
         return ''.join(format_byte(byte) for byte in self.data)
@@ -192,54 +98,3 @@ class CapturedPacket(object):
 
     def __lt__(self, other):
         return self.capture_time < other.capture_time
-
-    def _create_struct_header(self):
-        seconds = seconds_from_datetime(self.capture_time)
-        microseconds = microseconds_from_datetime(self.capture_time)
-        return CapturedPacketHeaderSection(seconds, microseconds, len(self), self.original_length)
-
-    def dumps(self, swapped_order=False):
-        return self._create_struct_header().pack(not swapped_order) + self.data
-
-    @staticmethod
-    def from_captured_packet_section(captured_packet_section):
-        if len(captured_packet_section.data) != captured_packet_section.header.data_length:
-            raise Exception('Packet header invalid, got data length {} instead of {}'.format(
-                len(captured_packet_section.data), captured_packet_section.header.data_length))
-        p = CapturedPacket(captured_packet_section.data, captured_packet_section.header.capture_time,
-                           captured_packet_section.header.original_length)
-        p.header = captured_packet_section.header
-        return p
-
-
-def load(path):
-    stream = open(path, 'rb')
-    return loads(stream)
-
-
-def loads(data):
-    if isinstance(data, bytes):
-        data = BytesIO(data)
-    cap_generator = NetworkCaptureLoader(data)
-    for _ in cap_generator:
-        pass
-    return cap_generator.cap
-
-
-def dump(cap, path):
-    open(path, 'wb').write(dumps(cap))
-
-
-def dumps(cap):
-    return cap.dumps()
-
-
-def merge(target_path, *source_paths):
-    if not source_paths:
-        dump(NetworkCapture(), target_path)
-    else:
-        caps = [load(p) for p in source_paths]
-        new_cap = caps[0]
-        for c in caps[1:]:
-            new_cap.packets += c.packets
-        dump(new_cap, target_path)
