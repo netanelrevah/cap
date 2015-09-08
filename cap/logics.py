@@ -1,8 +1,7 @@
 from enum import Enum
 
 from cap.nicer.bits import format_byte, format_bytes
-from cap.nicer.times import current_datetime, \
-    datetime_from_timestamp
+from cap.nicer.times import current_datetime, datetime_from_timestamp
 
 __author__ = 'netanelrevah'
 
@@ -79,7 +78,7 @@ class CapturedPacket(object):
 
     def __eq__(self, other):
         return self.data, self.original_length, self.capture_time, self.capture_time == \
-            other.data, other.original_length, other.capture_time, other.capture_time
+               other.data, other.original_length, other.capture_time, other.capture_time
 
     def __str__(self):
         return ''.join(format_byte(byte) for byte in self.data)
