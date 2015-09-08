@@ -39,8 +39,7 @@ class NetworkCapture(object):
     def __repr__(self):
         if len(self) == 0:
             return '<NetworkCapture - Empty>'
-        return '<CaptureFile - {} packets from {} to {}>'.format(
-            len(self), self[0].capture_time, self[-1].capture_time)
+        return '<CaptureFile - {} packets from {} to {}>'.format(len(self), self[0].capture_time, self[-1].capture_time)
 
     def append(self, packet):
         self.captured_packets.append(packet)
