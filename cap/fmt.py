@@ -15,21 +15,12 @@ class PacketCaptureHeaderFormat(DefinedStruct):
     MAGIC_VALUE = 0xa1b2c3d4
 
     @classmethod
-    def from_network_capture(cls, captured_packet):
-        # major_version, minor_version = captured_packet.version
-        # time_zone_hours = int(hours_from_timedelta(captured_packet.time_zone))
-        # max_capture_length_octets = captured_packet.max_capture_length * 2
-        # link_layer_type = captured_packet.link_layer_type.value
-        # return PacketCaptureHeaderFormat(
-        #     major_version, minor_version, time_zone_hours, max_capture_length_octets, link_layer_type)
-        return cls(2, 4, 0, 0x40000, 1)
-
-    @classmethod
     def loads(cls, stream, is_native_order=True):
         header_data = stream.read(24)  # TODO: use length function
         return cls.unpack(header_data, is_native_order)
 
-    def __init__(self, major_version, minor_version, time_zone_hours, max_capture_length_octets, link_layer_type):
+    def __init__(self, major_version=2, minor_version=4, time_zone_hours=0, max_capture_length_octets=0x40000,
+                 link_layer_type=1):
         self.major_version = major_version
         self.minor_version = minor_version
         self.time_zone_hours = time_zone_hours
@@ -110,17 +101,17 @@ class PacketCaptureFormatLoader(object):
 
     def __init__(self, stream):
         self.stream = stream
-        self._is_native_order = False
+        self.is_native_order = False
         self._file_header = None
 
     def _load_file_header(self):
         magic = self.stream.read(4)
         if magic not in self.MAGIC_VALUES_TO_ORDER:
             raise Exception('Stream magic is invalid')
-        self._is_native_order = self.MAGIC_VALUES_TO_ORDER[magic]
+        self.is_native_order = self.MAGIC_VALUES_TO_ORDER[magic]
         self.stream.seek(-4, 1)
 
-        self._file_header = PacketCaptureHeaderFormat.loads(self.stream, self._is_native_order)
+        self._file_header = PacketCaptureHeaderFormat.loads(self.stream, self.is_native_order)
 
     def _force_file_header_loading(self):
         if self._file_header is None:
@@ -139,7 +130,7 @@ class PacketCaptureFormatLoader(object):
 
     def next(self):
         self._force_file_header_loading()
-        formatted_captured_packet = CapturedPacketFormat.loads(self.stream, self._is_native_order)
+        formatted_captured_packet = CapturedPacketFormat.loads(self.stream, self.is_native_order)
         if formatted_captured_packet is None:
             raise StopIteration()
         return formatted_captured_packet
@@ -181,24 +172,26 @@ class PacketCaptureFormatDumper(object):
 
 
 class PacketCaptureFormat(object):
+    def __init__(self, file_header, captured_packets=None, is_native_order=True):
+        self.file_header = file_header
+        self.captured_packets = captured_packets if captured_packets is not None else []
+        self.is_native_order = is_native_order
+
     @classmethod
     def from_network_capture(cls, network_capture):
-        file_header = PacketCaptureHeaderFormat.from_network_capture(network_capture)
-        formatted_captured_packets = [CapturedPacketFormat.from_captured_packet(p) for p in network_capture]
-        return PacketCaptureFormat(file_header, formatted_captured_packets)
+        file_header = PacketCaptureHeaderFormat()
+        captured_packets = map(CapturedPacketFormat.from_captured_packet, network_capture)
+        return cls(file_header, captured_packets)
+
+    def to_network_capture(self):
+        captured_packets = map(CapturedPacketFormat.to_captured_packet, self.captured_packets)
+        return NetworkCapture(captured_packets, self.file_header.link_layer_type)
 
     @classmethod
     def loads(cls, stream):
         loader = PacketCaptureFormatLoader(stream)
-        return cls(loader.file_header, list(loader))
+        return cls(loader.file_header, list(loader), loader.is_native_order)
 
-    def __init__(self, file_header, formatted_captured_packets=None):
-        self.file_header = file_header
-        self.captured_packets = formatted_captured_packets if formatted_captured_packets is not None else []
-
-    def to_network_capture(self):
-        return NetworkCapture([p.to_captured_packet() for p in self.captured_packets], self.file_header.link_layer_type)
-
-    def dumps(self, is_native_order=True):
-        dumper = PacketCaptureFormatDumper(self, is_native_order)
+    def dumps(self):
+        dumper = PacketCaptureFormatDumper(self, self.is_native_order)
         return dumper.file_header + b''.join(list(dumper))
