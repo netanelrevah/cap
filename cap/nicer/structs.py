@@ -2,12 +2,12 @@ __author__ = 'netanelrevah'
 
 
 class DefinedStruct(object):
-    NATIVE_ORDER_HEADER_STRUCT = None
-    SWAPPED_ORDER_HEADER_STRUCT = None
+    LITTLE_ENDIAN_HEADER_STRUCT = None
+    BIG_ENDIAN_HEADER_STRUCT = None
 
     @classmethod
-    def get_struct(cls, is_native_order=True):
-        return cls.NATIVE_ORDER_HEADER_STRUCT if is_native_order else cls.SWAPPED_ORDER_HEADER_STRUCT
+    def get_struct(cls, is_big_endian=False):
+        return cls.LITTLE_ENDIAN_HEADER_STRUCT if is_big_endian else cls.BIG_ENDIAN_HEADER_STRUCT
 
     @staticmethod
     def _filter_constants(values):
@@ -16,10 +16,14 @@ class DefinedStruct(object):
     def _get_values_tuple(self):
         raise NotImplementedError()
 
-    def pack(self, is_native_order=True):
-        return self.get_struct(is_native_order).pack(*self._get_values_tuple())
+    def pack(self, is_big_endian=False):
+        return self.get_struct(is_big_endian).pack(*self._get_values_tuple())
 
     @classmethod
-    def unpack(cls, data, is_native_order=True):
-        header_struct = cls.get_struct(is_native_order)
+    def unpack(cls, data, is_big_endian=False):
+        header_struct = cls.get_struct(is_big_endian)
         return cls(*cls._filter_constants(header_struct.unpack(data)))
+
+    @classmethod
+    def size(cls):
+        return cls.LITTLE_ENDIAN_HEADER_STRUCT.size

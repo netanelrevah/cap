@@ -9,6 +9,39 @@ from cap.nicer.times import datetime_from_seconds_and_microseconds, seconds_from
 __author__ = 'netanelrevah'
 
 
+class CapturedPacketHeaderFormat(DefinedStruct):
+    LITTLE_ENDIAN_HEADER_STRUCT = Struct('<IIII')  # TODO: feedback jetbrains about formatting language
+    BIG_ENDIAN_HEADER_STRUCT = Struct('>IIII')
+
+    def __init__(self, seconds=0, microseconds=0, data_length=0, original_length=0):
+        self.seconds = seconds
+        self.microseconds = microseconds
+        self.data_length = data_length
+        self.original_length = original_length
+
+    @property
+    def capture_time(self):
+        return datetime_from_seconds_and_microseconds(self.seconds, self.microseconds)
+
+    def _get_values_tuple(self):
+        return (self.seconds,
+                self.microseconds,
+                self.data_length,
+                self.original_length)
+
+    @classmethod
+    def init_from_captured_packet(cls, captured_packet):
+        seconds = seconds_from_datetime(captured_packet.capture_time)
+        microseconds = microseconds_from_datetime(captured_packet.capture_time)
+        return cls(seconds, microseconds, len(captured_packet), captured_packet.original_length)
+
+    @classmethod
+    def loads(cls, stream, is_big_endian=False):
+        header_data = stream.read(cls.size())  # TODO: use length function
+        if not header_data or len(header_data) == 0:
+            return
+        return cls.unpack(header_data, is_big_endian)
+
 class PacketCaptureHeaderFormat(DefinedStruct):
     NATIVE_ORDER_HEADER_STRUCT = Struct('>IHHiIII')
     SWAPPED_ORDER_HEADER_STRUCT = Struct('<IHHiIII')
@@ -36,44 +69,10 @@ class PacketCaptureHeaderFormat(DefinedStruct):
                self.max_capture_length_octets, self.link_layer_type
 
 
-class CapturedPacketHeaderFormat(DefinedStruct):
-    NATIVE_ORDER_HEADER_STRUCT = Struct('>IIII')
-    SWAPPED_ORDER_HEADER_STRUCT = Struct('<IIII')
-
-    @classmethod
-    def from_captured_packet(cls, captured_packet):
-        seconds = seconds_from_datetime(captured_packet.capture_time)
-        microseconds = microseconds_from_datetime(captured_packet.capture_time)
-        return cls(seconds, microseconds, len(captured_packet), captured_packet.original_length)
-
-    @classmethod
-    def loads(cls, stream, is_native_order=True):
-        header_data = stream.read(16)  # TODO: use length function
-        if not header_data or len(header_data) == 0:
-            return
-        return cls.unpack(header_data, is_native_order)
-
-    def __init__(self, seconds, microseconds, data_length, original_length):
-        self.seconds = seconds
-        self.microseconds = microseconds
-        self.data_length = data_length
-        self.original_length = original_length
-
-    @property
-    def capture_time(self):
-        return datetime_from_seconds_and_microseconds(self.seconds, self.microseconds)
-
-    def _get_values_tuple(self):
-        return (self.seconds,
-                self.microseconds,
-                self.data_length,
-                self.original_length)
-
-
 class CapturedPacketFormat(object):
     @classmethod
     def from_captured_packet(cls, captured_packet):
-        captured_packet_header = CapturedPacketHeaderFormat.from_captured_packet(captured_packet)
+        captured_packet_header = CapturedPacketHeaderFormat.init_from_captured_packet(captured_packet)
         return cls(captured_packet_header, captured_packet.data)
 
     @classmethod

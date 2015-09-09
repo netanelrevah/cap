@@ -1,5 +1,5 @@
 from cap.logics import NetworkCapture
-from cap.fmt import PacketCaptureFormat
+from cap.formats import PacketCaptureFormat
 from cap.nicer.streams import to_stream
 
 __author__ = 'netanelrevah'
