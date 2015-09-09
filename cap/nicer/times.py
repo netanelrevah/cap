@@ -6,7 +6,7 @@ __author__ = 'netanelrevah'
 
 
 def current_datetime():
-    return datetime.now()
+    return datetime.now(pytz.UTC)
 
 
 def seconds_from_datetime(value):
@@ -27,7 +27,7 @@ def seconds_from_timedelta(value):
     """
     :type value: timedelta
     """
-    return .0 + value.days * 24 * 60 * 60 + value.seconds + value.microseconds / 100000.
+    return .0 + value.days * 24 * 60 * 60 + value.seconds + value.microseconds / 1000000.
 
 
 def hours_from_timedelta(value):

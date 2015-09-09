@@ -9,7 +9,7 @@ import pytz
 
 from cap.formats import CapturedPacketHeaderFormat
 from cap.logics import CapturedPacket
-from cap.nicer.times import seconds_from_datetime
+from cap.nicer.times import seconds_from_datetime, current_datetime
 
 MOCKED_DATA = b'SomeRandomStringOfData'
 
@@ -42,7 +42,7 @@ def test_capture_time_property_for_epoch():
 
 
 def test_capture_time_property_for_now():
-    now = datetime.now(pytz.UTC)
+    now = current_datetime()
     captured_packet_header_format = CapturedPacketHeaderFormat(seconds_from_datetime(now), now.microsecond)
     assert captured_packet_header_format.capture_time == now
 
