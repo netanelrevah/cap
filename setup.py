@@ -1,6 +1,6 @@
-__author__ = 'netanelrevah'
-
 from setuptools import setup
+
+__author__ = 'netanelrevah'
 
 main_namespace = {}
 with open('cap/version.py') as version_file:
