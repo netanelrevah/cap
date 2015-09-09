@@ -3,7 +3,9 @@ from random import randint
 import struct
 
 import mock
+
 from _pytest.python import raises
+import pytz
 
 from cap.formats import CapturedPacketHeaderFormat
 from cap.logics import CapturedPacket
@@ -36,11 +38,11 @@ def test_init_with_randoms():
 
 def test_capture_time_property_for_epoch():
     captured_packet_header_format = CapturedPacketHeaderFormat()
-    assert captured_packet_header_format.capture_time == datetime(1970, 1, 1, 2)  # TODO: mess with timezones
+    assert captured_packet_header_format.capture_time == datetime(1970, 1, 1, tzinfo=pytz.UTC)
 
 
 def test_capture_time_property_for_now():
-    now = datetime.now()
+    now = datetime.now(pytz.UTC)
     captured_packet_header_format = CapturedPacketHeaderFormat(seconds_from_datetime(now), now.microsecond)
     assert captured_packet_header_format.capture_time == now
 
@@ -66,7 +68,7 @@ def test_capture_time_property_for_now():
 
 
 def test_init_from_captured_packet():
-    now = datetime.now()
+    now = datetime.now(tz=pytz.UTC)
     original_length = len(MOCKED_DATA) + randint(0, 100)
     captured_packet = CapturedPacket(MOCKED_DATA, now, original_length)
     captured_packet_header_format = CapturedPacketHeaderFormat.init_from_captured_packet(captured_packet)

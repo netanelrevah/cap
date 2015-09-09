@@ -1,7 +1,8 @@
-__author__ = 'netanelrevah'
-
 from datetime import datetime, timedelta
-import time
+
+import pytz
+
+__author__ = 'netanelrevah'
 
 
 def current_datetime():
@@ -12,7 +13,7 @@ def seconds_from_datetime(value):
     """
     :type value: datetime
     """
-    return int(time.mktime(value.timetuple()))
+    return int((value - datetime(1970, 1, 1, tzinfo=pytz.UTC)).total_seconds())
 
 
 def microseconds_from_datetime(value):
@@ -45,8 +46,8 @@ def hours_delta(hours):
 
 
 def datetime_from_timestamp(value):
-    return datetime.fromtimestamp(value)
+    return datetime.fromtimestamp(value, pytz.UTC)
 
 
 def datetime_from_seconds_and_microseconds(seconds, microseconds):
-    return datetime.fromtimestamp(seconds) + timedelta(microseconds=microseconds)
+    return datetime.fromtimestamp(seconds, pytz.UTC) + timedelta(microseconds=microseconds)
