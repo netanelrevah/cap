@@ -13,7 +13,7 @@ def seconds_from_datetime(value):
     """
     :type value: datetime
     """
-    return int((value - datetime(1970, 1, 1, tzinfo=pytz.UTC)).total_seconds())
+    return int(seconds_from_timedelta(value - datetime(1970, 1, 1, tzinfo=pytz.UTC)))
 
 
 def microseconds_from_datetime(value):
