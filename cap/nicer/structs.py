@@ -27,3 +27,6 @@ class DefinedStruct(object):
     @classmethod
     def size(cls):
         return cls.LITTLE_ENDIAN_HEADER_STRUCT.size
+    
+    def __eq__(self, other):
+        return self._get_values_tuple() == other._get_values_tuple()

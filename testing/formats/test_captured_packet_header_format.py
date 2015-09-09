@@ -36,6 +36,24 @@ def test_init_with_randoms():
     assert captured_packet_header_format.original_length == original_length
 
 
+def test_eq():
+    seconds = randint(0, 100)
+    microseconds = randint(0, 100)
+    data_length = randint(0, 100)
+    original_length = randint(0, 100)
+    captured_packet_header_format1 = CapturedPacketHeaderFormat(seconds, microseconds, data_length, original_length)
+    captured_packet_header_format2 = CapturedPacketHeaderFormat()
+    assert captured_packet_header_format1 != captured_packet_header_format2
+    captured_packet_header_format2.seconds = seconds
+    assert captured_packet_header_format1 != captured_packet_header_format2
+    captured_packet_header_format2.microseconds = microseconds
+    assert captured_packet_header_format1 != captured_packet_header_format2
+    captured_packet_header_format2.data_length = data_length
+    assert captured_packet_header_format1 != captured_packet_header_format2
+    captured_packet_header_format2.original_length = original_length
+    assert captured_packet_header_format1 == captured_packet_header_format2
+
+
 def test_capture_time_property_for_epoch():
     captured_packet_header_format = CapturedPacketHeaderFormat()
     assert captured_packet_header_format.capture_time == datetime(1970, 1, 1, tzinfo=pytz.UTC)

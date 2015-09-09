@@ -1,7 +1,6 @@
 from struct import Struct
 
 from cap.logics import NetworkCapture, CapturedPacket
-
 from cap.nicer.structs import DefinedStruct
 from cap.nicer.times import datetime_from_seconds_and_microseconds, seconds_from_datetime, \
     microseconds_from_datetime
@@ -42,6 +41,32 @@ class CapturedPacketHeaderFormat(DefinedStruct):
             return
         return cls.unpack(header_data, is_big_endian)
 
+
+class CapturedPacketFormat(object):
+    def __init__(self, header=None, data=b''):
+        self.header = header if header is not None else CapturedPacketHeaderFormat()
+        self.data = data
+
+    @classmethod
+    def init_from_captured_packet(cls, captured_packet):
+        captured_packet_header = CapturedPacketHeaderFormat.init_from_captured_packet(captured_packet)
+        return cls(captured_packet_header, captured_packet.data)
+
+    def to_captured_packet(self):
+        return CapturedPacket(self.data, self.header.capture_time, self.header.original_length)
+
+    @classmethod
+    def loads(cls, stream, is_big_endian=False):
+        captured_packet_header = CapturedPacketHeaderFormat.loads(stream, is_big_endian)
+        if captured_packet_header is None:
+            return None
+        data = stream.read(captured_packet_header.data_length)
+        return cls(captured_packet_header, data)
+
+    def dumps(self, is_big_endian=False):
+        return self.header.pack(is_big_endian) + self.data
+
+
 class PacketCaptureHeaderFormat(DefinedStruct):
     NATIVE_ORDER_HEADER_STRUCT = Struct('>IHHiIII')
     SWAPPED_ORDER_HEADER_STRUCT = Struct('<IHHiIII')
@@ -67,31 +92,6 @@ class PacketCaptureHeaderFormat(DefinedStruct):
     def _get_values_tuple(self):
         return self.MAGIC_VALUE, self.major_version, self.minor_version, self.time_zone_hours, 0, \
                self.max_capture_length_octets, self.link_layer_type
-
-
-class CapturedPacketFormat(object):
-    @classmethod
-    def from_captured_packet(cls, captured_packet):
-        captured_packet_header = CapturedPacketHeaderFormat.init_from_captured_packet(captured_packet)
-        return cls(captured_packet_header, captured_packet.data)
-
-    @classmethod
-    def loads(cls, stream, is_native_order):
-        captured_packet_header = CapturedPacketHeaderFormat.loads(stream, is_native_order)
-        if captured_packet_header is None:
-            return None
-        data = stream.read(captured_packet_header.data_length)
-        return cls(captured_packet_header, data)
-
-    def __init__(self, header, data):
-        self.header = header
-        self.data = data
-
-    def to_captured_packet(self):
-        return CapturedPacket(self.data, self.header.capture_time, self.header.original_length)
-
-    def dumps(self, is_native_order=True):
-        return self.header.pack(is_native_order) + self.data
 
 
 class PacketCaptureFormatLoader(object):
@@ -179,7 +179,7 @@ class PacketCaptureFormat(object):
     @classmethod
     def from_network_capture(cls, network_capture):
         file_header = PacketCaptureHeaderFormat()
-        captured_packets = map(CapturedPacketFormat.from_captured_packet, network_capture)
+        captured_packets = map(CapturedPacketFormat.init_from_captured_packet, network_capture)
         return cls(file_header, captured_packets)
 
     def to_network_capture(self):
