@@ -2,8 +2,9 @@ from datetime import datetime
 from random import randint
 import struct
 
-from unittest import mock
+import mock
 from _pytest.python import raises
+
 from cap.formats import CapturedPacketHeaderFormat
 from cap.logics import CapturedPacket
 from cap.nicer.times import seconds_from_datetime
