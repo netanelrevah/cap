@@ -9,7 +9,7 @@ __author__ = 'netanelrevah'
 
 
 class CapturedPacketHeaderFormat(DefinedStruct):
-    LITTLE_ENDIAN_HEADER_STRUCT = Struct('<IIII')  # TODO: feedback jetbrains about formatting language
+    LITTLE_ENDIAN_HEADER_STRUCT = Struct('<IIII')
     BIG_ENDIAN_HEADER_STRUCT = Struct('>IIII')
 
     def __init__(self, seconds=0, microseconds=0, data_length=0, original_length=0):
@@ -36,7 +36,7 @@ class CapturedPacketHeaderFormat(DefinedStruct):
 
     @classmethod
     def loads(cls, stream, is_big_endian=False):
-        header_data = stream.read(cls.size())  # TODO: use length function
+        header_data = stream.read(cls.size())
         if not header_data or len(header_data) == 0:
             return
         return cls.unpack(header_data, is_big_endian)

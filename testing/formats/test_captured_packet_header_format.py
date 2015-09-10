@@ -65,26 +65,6 @@ def test_capture_time_property_for_now():
     assert captured_packet_header_format.capture_time == now
 
 
-# def test_pack_with_randoms():
-#     seconds = randint(0x00, 0xFFFFFFFF)
-#     microseconds = randint(0x00, 0xFFFFFFFF)
-#     data_length = randint(0x00, 0xFFFFFFFF)
-#     original_length = randint(0x00, 0xFFFFFFFF)
-#     captured_packet_header_format = CapturedPacketHeaderFormat(seconds, microseconds, data_length, original_length)
-#     assert captured_packet_header_format.pack(True) == struct.pack(
-#         '<IIII', seconds, microseconds, data_length, original_length)
-#
-#
-# def test_pack_with_randoms_and_big_endian():
-#     seconds = randint(0x00, 0xFFFFFFFF)
-#     microseconds = randint(0x00, 0xFFFFFFFF)
-#     data_length = randint(0x00, 0xFFFFFFFF)
-#     original_length = randint(0x00, 0xFFFFFFFF)
-#     captured_packet_header_format = CapturedPacketHeaderFormat(seconds, microseconds, data_length, original_length)
-#     assert captured_packet_header_format.pack(False) == struct.pack(
-#         '>IIII', seconds, microseconds, data_length, original_length)
-
-
 def test_init_from_captured_packet():
     now = datetime.now(tz=pytz.UTC)
     original_length = len(MOCKED_DATA) + randint(0, 100)
