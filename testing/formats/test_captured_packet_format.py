@@ -53,9 +53,9 @@ def mocked_stream():
 
         def read(self, size):
             if size == 16:
-                random_string = bytearray([i for i in [0, 0, 0, randint(0, 255)] for _ in range(4)])
+                random_string = bytes(bytearray([i for i in [0, 0, 0, randint(0, 255)] for _ in range(4)]))
             else:
-                random_string = bytearray(randint(0, 5) for _ in range(size))
+                random_string = bytes(bytearray(randint(0, 5) for _ in range(size)))
             self.streamed += random_string
             return random_string
 
