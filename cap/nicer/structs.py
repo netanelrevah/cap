@@ -22,11 +22,13 @@ class DefinedStruct(object):
     @classmethod
     def unpack(cls, data, is_big_endian=False):
         header_struct = cls.get_struct(is_big_endian)
+        if isinstance(data, bytearray):
+            data = bytes(data)
         return cls(*cls._filter_constants(header_struct.unpack(data)))
 
     @classmethod
     def size(cls):
         return cls.LITTLE_ENDIAN_HEADER_STRUCT.size
-    
+
     def __eq__(self, other):
         return self._get_values_tuple() == other._get_values_tuple()
