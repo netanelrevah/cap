@@ -52,7 +52,6 @@ class NetworkCapture(object):
 
 class CapturedPacket(object):
     def __init__(self, data, capture_time=None, original_length=None):
-        self.header = None
         self.data = data
 
         self.capture_time = capture_time
