@@ -1,5 +1,5 @@
 from random import randint
-from _pytest.python import fixture
+from _pytest.python import fixture, raises
 import mock
 
 from cap.formats import CapturedPacketFormat, CapturedPacketHeaderFormat
@@ -50,12 +50,19 @@ def mocked_stream():
     class MockedStream(object):
         def __init__(self):
             self.streamed = b''
+            self.max_length = None
+
+        def _generate_word(self):
+            return b'\x00\x00\x00' + bytes(bytearray([randint(0, 255)]))
 
         def read(self, size):
+            if self.max_length is not None:
+                size = min(self.max_length, size)
+                self.max_length -= size
             if size == 16:
-                random_string = bytes(bytearray([i for i in [0, 0, 0, randint(0, 255)] for _ in range(4)]))
+                random_string = b''.join([self._generate_word() for _ in range(4)])
             else:
-                random_string = bytes(bytearray(randint(0, 5) for _ in range(size)))
+                random_string = bytes(bytearray([randint(0, 255) for _ in range(size)]))
             self.streamed += random_string
             return random_string
 
@@ -68,3 +75,21 @@ def test_loads_valid_packet(mocked_stream):
     assert captured_packet_format.header == captured_packet_header_format
     assert captured_packet_format.data == mocked_stream.streamed[16:]
     assert len(captured_packet_format.data) == captured_packet_header_format.data_length
+
+
+def test_loads_packet_with_no_data(mocked_stream):
+    mocked_stream.max_length = 16
+    with raises(Exception):
+        CapturedPacketFormat.loads(mocked_stream)
+
+
+def test_loads_empty_packet(mocked_stream):
+    mocked_stream.max_length = 0
+    assert CapturedPacketFormat.loads(mocked_stream) is None
+
+
+def test_dumps():
+    header = CapturedPacketHeaderFormat(1, 2, 3, 4)
+    data = b'ABCD'
+    captured_packet_format = CapturedPacketFormat(header, data)
+    assert captured_packet_format.dumps() == header.pack() + data

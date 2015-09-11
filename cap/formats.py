@@ -61,6 +61,9 @@ class CapturedPacketFormat(object):
         if captured_packet_header is None:
             return None
         data = stream.read(captured_packet_header.data_length)
+        if len(data) != captured_packet_header.data_length:
+            raise Exception('Invalid Packet Data Length! Header consist: {} bytes, Data loaded: {} bytes'.format(
+                captured_packet_header.data_length, len(data)))
         return cls(captured_packet_header, data)
 
     def dumps(self, is_big_endian=False):
