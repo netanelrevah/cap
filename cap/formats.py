@@ -71,14 +71,14 @@ class CapturedPacketFormat(object):
 
 
 class PacketCaptureHeaderFormat(DefinedStruct):
-    NATIVE_ORDER_HEADER_STRUCT = Struct('>IHHiIII')
-    SWAPPED_ORDER_HEADER_STRUCT = Struct('<IHHiIII')
+    LITTLE_ENDIAN_HEADER_STRUCT = Struct('<IHHiIII')
+    BIG_ENDIAN_HEADER_STRUCT = Struct('>IHHiIII')
     MAGIC_VALUE = 0xa1b2c3d4
 
     @classmethod
-    def loads(cls, stream, is_native_order=True):
-        header_data = stream.read(24)  # TODO: use length function
-        return cls.unpack(header_data, is_native_order)
+    def loads(cls, stream, is_big_endian=False):
+        header_data = stream.read(cls.size())
+        return cls.unpack(header_data, is_big_endian)
 
     def __init__(self, major_version=2, minor_version=4, time_zone_hours=0, max_capture_length_octets=0x40000,
                  link_layer_type=1):
@@ -90,7 +90,7 @@ class PacketCaptureHeaderFormat(DefinedStruct):
 
     @staticmethod
     def _filter_constants(values):
-        return values[1], values[2], values[4], values[5], values[6]
+        return values[1], values[2], values[3], values[5], values[6]
 
     def _get_values_tuple(self):
         return self.MAGIC_VALUE, self.major_version, self.minor_version, self.time_zone_hours, 0, \
