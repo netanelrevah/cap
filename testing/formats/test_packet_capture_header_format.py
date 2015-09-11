@@ -76,7 +76,7 @@ def test_loads():
 def test_loads_with_none_value():
     stream = mock.Mock()
     stream.read.return_value = None
-    with raises(TypeError):
+    with raises(struct.error):
         PacketCaptureHeaderFormat.loads(stream)
 
 

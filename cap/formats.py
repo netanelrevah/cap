@@ -78,6 +78,7 @@ class PacketCaptureHeaderFormat(DefinedStruct):
     @classmethod
     def loads(cls, stream, is_big_endian=False):
         header_data = stream.read(cls.size())
+        header_data = b'' if header_data is None else header_data
         return cls.unpack(header_data, is_big_endian)
 
     def __init__(self, major_version=2, minor_version=4, time_zone_hours=0, max_capture_length_octets=0x40000,
