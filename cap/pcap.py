@@ -102,19 +102,19 @@ class PacketCaptureFormatLoader(object):
     MAGIC_VALUES_TO_ORDER = {b'\xa1\xb2\xc3\xd4': True, b'\xa1\xb2\x3c\xd4': True,
                              b'\xd4\xc3\xb2\xa1': False, b'\xd4\x3c\xb2\xa1': False}
 
-    def __init__(self, stream, is_native_order=False):
+    def __init__(self, stream, is_big_endian=False):
         self.stream = stream
-        self.is_native_order = is_native_order
+        self.is_big_endian = is_big_endian
         self._file_header = None
 
     def _load_file_header(self):
         magic = self.stream.read(4)
         if magic not in self.MAGIC_VALUES_TO_ORDER:
             raise Exception('Stream magic is invalid')
-        self.is_native_order = self.MAGIC_VALUES_TO_ORDER[magic]
+        self.is_big_endian = self.MAGIC_VALUES_TO_ORDER[magic]
         self.stream.seek(-4, 1)
 
-        self._file_header = PacketCaptureHeaderFormat.loads(self.stream, self.is_native_order)
+        self._file_header = PacketCaptureHeaderFormat.loads(self.stream, self.is_big_endian)
 
     def _force_file_header_loading(self):
         if self._file_header is None:
@@ -133,7 +133,7 @@ class PacketCaptureFormatLoader(object):
 
     def next(self):
         self._force_file_header_loading()
-        formatted_captured_packet = CapturedPacketFormat.loads(self.stream, self.is_native_order)
+        formatted_captured_packet = CapturedPacketFormat.loads(self.stream, self.is_big_endian)
         if formatted_captured_packet is None:
             raise StopIteration()
         return formatted_captured_packet
@@ -143,14 +143,14 @@ class PacketCaptureFormatDumper(object):
     MAGIC_VALUES_TO_ORDER = {b'\xa1\xb2\xc3\xd4': True, b'\xa1\xb2\x3c\xd4': True,
                              b'\xd4\xc3\xb2\xa1': False, b'\xd4\x3c\xb2\xa1': False}
 
-    def __init__(self, packet_capture, is_native_order=True):
+    def __init__(self, packet_capture, is_big_endian=True):
         self._packet_capture = packet_capture
-        self._is_native_order = is_native_order
+        self.is_big_endian = is_big_endian
         self._file_header = None
         self._captured_packets_iterator = None
 
     def _dump_file_header(self):
-        self._file_header = self._packet_capture.file_header.pack(self._is_native_order)
+        self._file_header = self._packet_capture.file_header.pack(self.is_big_endian)
 
     def _force_file_header_dumping(self):
         if self._file_header is None:
@@ -171,14 +171,14 @@ class PacketCaptureFormatDumper(object):
         self._force_file_header_dumping()
         if self._captured_packets_iterator is None:
             self._captured_packets_iterator = iter(self._packet_capture.captured_packets)
-        return next(self._captured_packets_iterator).dumps(self._is_native_order)
+        return next(self._captured_packets_iterator).dumps(self.is_big_endian)
 
 
 class PacketCaptureFormat(object):
-    def __init__(self, file_header, captured_packets=None, is_native_order=True):
+    def __init__(self, file_header, captured_packets=None, is_big_endian=False):
         self.file_header = file_header
         self.captured_packets = captured_packets if captured_packets is not None else []
-        self.is_native_order = is_native_order
+        self.is_big_endian = is_big_endian
 
     @classmethod
     def from_network_capture(cls, network_capture):
@@ -193,8 +193,8 @@ class PacketCaptureFormat(object):
     @classmethod
     def loads(cls, stream):
         loader = PacketCaptureFormatLoader(stream)
-        return cls(loader.file_header, list(loader), loader.is_native_order)
+        return cls(loader.file_header, list(loader), loader.is_big_endian)
 
     def dumps(self):
-        dumper = PacketCaptureFormatDumper(self, self.is_native_order)
+        dumper = PacketCaptureFormatDumper(self, self.is_big_endian)
         return dumper.file_header + b''.join(list(dumper))

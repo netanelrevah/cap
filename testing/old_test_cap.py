@@ -87,7 +87,7 @@ def test_dumps_empty_capture_file():
 
 def test_dumps_empty_capture_file_with_swapped_order():
     c = cap.NetworkCapture([], 1)
-    assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c, is_native_order=False)
+    assert CAP_HEADER_WITH_SWAPPED_ORDER == cap.dumps(c, is_big_endian=False)
 
 
 def test_sorting_cap_packets(random_cap):

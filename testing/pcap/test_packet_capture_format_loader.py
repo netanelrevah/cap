@@ -12,14 +12,14 @@ def test_initialize_using_defaults():
     mocked_stream = mock.Mock()
     packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
     assert packet_capture_format_loader.stream == mocked_stream
-    assert packet_capture_format_loader.is_native_order is False
+    assert packet_capture_format_loader.is_big_endian is False
 
 
 def test_initialize():
     mocked_stream = mock.Mock()
     packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream, True)
     assert packet_capture_format_loader.stream == mocked_stream
-    assert packet_capture_format_loader.is_native_order is True
+    assert packet_capture_format_loader.is_big_endian is True
 
 
 @fixture
