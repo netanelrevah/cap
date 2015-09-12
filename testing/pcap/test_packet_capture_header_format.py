@@ -3,7 +3,7 @@ from _pytest.python import raises
 import mock
 import struct
 
-from cap.formats import PacketCaptureHeaderFormat
+from cap.pcap import PacketCaptureHeaderFormat
 
 __author__ = 'netanelrevah'
 

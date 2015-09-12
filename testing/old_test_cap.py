@@ -1,4 +1,4 @@
-from cap.formats import PacketCaptureHeaderFormat
+from cap.pcap import PacketCaptureHeaderFormat
 
 __author__ = 'netanelrevah'
 

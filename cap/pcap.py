@@ -1,6 +1,6 @@
 from struct import Struct
 
-from cap.logics import NetworkCapture, CapturedPacket
+from cap.core import NetworkCapture, CapturedPacket
 from cap.nicer.structs import DefinedStruct
 from cap.nicer.times import datetime_from_seconds_and_microseconds, seconds_from_datetime, \
     microseconds_from_datetime
@@ -102,9 +102,9 @@ class PacketCaptureFormatLoader(object):
     MAGIC_VALUES_TO_ORDER = {b'\xa1\xb2\xc3\xd4': True, b'\xa1\xb2\x3c\xd4': True,
                              b'\xd4\xc3\xb2\xa1': False, b'\xd4\x3c\xb2\xa1': False}
 
-    def __init__(self, stream):
+    def __init__(self, stream, is_native_order=False):
         self.stream = stream
-        self.is_native_order = False
+        self.is_native_order = is_native_order
         self._file_header = None
 
     def _load_file_header(self):

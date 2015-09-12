@@ -7,8 +7,8 @@ import mock
 from _pytest.python import raises
 import pytz
 
-from cap.formats import CapturedPacketHeaderFormat
-from cap.logics import CapturedPacket
+from cap.pcap import CapturedPacketHeaderFormat
+from cap.core import CapturedPacket
 from cap.nicer.times import seconds_from_datetime, current_datetime
 
 MOCKED_DATA = b'SomeRandomStringOfData'
