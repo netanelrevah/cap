@@ -60,8 +60,3 @@ def test_file_header_property_with_valid_magic(mocked_stream):
 def test_iteration_builtin():
     packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
     assert iter(packet_capture_format_loader) == packet_capture_format_loader
-
-
-def test_next_builtin():
-    packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
-    assert iter(packet_capture_format_loader) == packet_capture_format_loader
