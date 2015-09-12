@@ -52,7 +52,8 @@ def mocked_stream():
             self.streamed = b''
             self.max_length = None
 
-        def _generate_word(self):
+        @staticmethod
+        def _generate_word():
             return b'\x00\x00\x00' + bytes(bytearray([randint(0, 255)]))
 
         def read(self, size):
