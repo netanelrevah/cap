@@ -55,3 +55,13 @@ def test_file_header_property_with_valid_magic(mocked_stream):
     mocked_stream.start = list(PacketCaptureFormatLoader.MAGIC_VALUES_TO_ORDER.keys())[0]
     packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream, True)
     assert packet_capture_format_loader.file_header is not None
+
+
+def test_iteration_builtin():
+    packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
+    assert iter(packet_capture_format_loader) == packet_capture_format_loader
+
+
+def test_next_builtin():
+    packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
+    assert iter(packet_capture_format_loader) == packet_capture_format_loader
