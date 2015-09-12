@@ -99,26 +99,31 @@ class PacketCaptureHeaderFormat(DefinedStruct):
 
 
 class PacketCaptureFormatLoader(object):
-    MAGIC_VALUES_TO_ORDER = {b'\xa1\xb2\xc3\xd4': True, b'\xa1\xb2\x3c\xd4': True,
-                             b'\xd4\xc3\xb2\xa1': False, b'\xd4\x3c\xb2\xa1': False}
+    MAGIC_VALUES_TO_BIG_ENDIAN = {b'\xa1\xb2\xc3\xd4': False, b'\xa1\xb2\x3c\xd4': False,
+                             b'\xd4\xc3\xb2\xa1': True, b'\xd4\x3c\xb2\xa1': True}
 
-    def __init__(self, stream, is_big_endian=False):
+    def __init__(self, stream):
         self.stream = stream
-        self.is_big_endian = is_big_endian
+        self._is_big_endian = False
         self._file_header = None
 
     def _load_file_header(self):
         magic = self.stream.read(4)
-        if magic not in self.MAGIC_VALUES_TO_ORDER:
+        if magic not in self.MAGIC_VALUES_TO_BIG_ENDIAN:
             raise Exception('Stream magic is invalid')
-        self.is_big_endian = self.MAGIC_VALUES_TO_ORDER[magic]
+        self._is_big_endian = self.MAGIC_VALUES_TO_BIG_ENDIAN[magic]
         self.stream.seek(-4, 1)
 
-        self._file_header = PacketCaptureHeaderFormat.loads(self.stream, self.is_big_endian)
+        self._file_header = PacketCaptureHeaderFormat.loads(self.stream, self._is_big_endian)
 
     def _force_file_header_loading(self):
         if self._file_header is None:
             self._load_file_header()
+
+    @property
+    def is_big_endian(self):
+        self._force_file_header_loading()
+        return self._is_big_endian
 
     @property
     def file_header(self):
@@ -133,7 +138,7 @@ class PacketCaptureFormatLoader(object):
 
     def next(self):
         self._force_file_header_loading()
-        formatted_captured_packet = CapturedPacketFormat.loads(self.stream, self.is_big_endian)
+        formatted_captured_packet = CapturedPacketFormat.loads(self.stream, self._is_big_endian)
         if formatted_captured_packet is None:
             raise StopIteration()
         return formatted_captured_packet
