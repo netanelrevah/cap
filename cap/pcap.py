@@ -44,8 +44,10 @@ class CapturedPacketHeaderFormat(DefinedStruct):
 
 class CapturedPacketFormat(object):
     def __init__(self, header=None, data=b''):
-        self.header = header if header is not None else CapturedPacketHeaderFormat()
         self.data = data
+        self.header = header
+        if header is None:
+            self.header = CapturedPacketHeaderFormat(data_length=len(self.data), original_length=len(self.data))
 
     @classmethod
     def init_from_captured_packet(cls, captured_packet):
@@ -68,6 +70,9 @@ class CapturedPacketFormat(object):
 
     def dumps(self, is_big_endian=False):
         return self.header.pack(is_big_endian) + self.data
+
+    def __eq__(self, other):
+        return self.data == other.data and self.header == other.header
 
 
 class PacketCaptureHeaderFormat(DefinedStruct):
@@ -100,7 +105,7 @@ class PacketCaptureHeaderFormat(DefinedStruct):
 
 class PacketCaptureFormatLoader(object):
     MAGIC_VALUES_TO_BIG_ENDIAN = {b'\xa1\xb2\xc3\xd4': False, b'\xa1\xb2\x3c\xd4': False,
-                             b'\xd4\xc3\xb2\xa1': True, b'\xd4\x3c\xb2\xa1': True}
+                                  b'\xd4\xc3\xb2\xa1': True, b'\xd4\x3c\xb2\xa1': True}
 
     def __init__(self, stream):
         self.stream = stream
@@ -145,10 +150,7 @@ class PacketCaptureFormatLoader(object):
 
 
 class PacketCaptureFormatDumper(object):
-    MAGIC_VALUES_TO_ORDER = {b'\xa1\xb2\xc3\xd4': True, b'\xa1\xb2\x3c\xd4': True,
-                             b'\xd4\xc3\xb2\xa1': False, b'\xd4\x3c\xb2\xa1': False}
-
-    def __init__(self, packet_capture, is_big_endian=True):
+    def __init__(self, packet_capture, is_big_endian=False):
         self._packet_capture = packet_capture
         self.is_big_endian = is_big_endian
         self._file_header = None
