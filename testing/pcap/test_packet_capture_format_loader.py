@@ -38,6 +38,28 @@ def mocked_stream():
     return MockedStream()
 
 
+def test_big_endian_property_with_invalid_header():
+    CAP_HEADER = b"\xA1\xB2\xC3\x12"
+    mocked_stream = MockedStream(BytesIO(CAP_HEADER))
+    packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
+    with raises(Exception):
+        assert packet_capture_format_loader.is_big_endian is not None
+
+
+def test_big_endian_property_with_little_endian_header():
+    CAP_HEADER = b"\xA1\xB2\xC3\xD4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x01"
+    mocked_stream = MockedStream(BytesIO(CAP_HEADER))
+    packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
+    assert packet_capture_format_loader.is_big_endian is False
+
+
+def test_big_endian_property_with_big_endian_header():
+    CAP_HEADER = b"\xD4\xC3\xB2\xA1\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x00\x01\x00\x00\x00"
+    mocked_stream = MockedStream(BytesIO(CAP_HEADER))
+    packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
+    assert packet_capture_format_loader.is_big_endian is True
+
+
 def test_file_header_property_with_invalid_magic(mocked_stream):
     mocked_stream.start = b'ABCD'
     packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
@@ -60,18 +82,11 @@ def test_iteration_with_no_packets():
     # TODO: Replace with random cap creator
     # TODO: Replace with good mocked stream
     CAP_HEADER = b"\xA1\xB2\xC3\xD4\x00\x02\x00\x04\x00\x00\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x00\x00\x01"
-
-    def mocked_read(size):
-        if size == 4:
-            return CAP_HEADER[:4]
-        elif size == 24:
-            return CAP_HEADER
-        return b''
-
-    mocked_stream = mock.Mock()
-    mocked_stream.read.side_effect = mocked_read
+    mocked_stream = MockedStream(BytesIO(CAP_HEADER))
     packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
     assert list(packet_capture_format_loader) == []
+    assert mocked_stream.read_params == [(4,), (24,), (16,)]
+    assert mocked_stream.seek_params == [(-4, 1)]
 
 
 class MockedStream(object):
@@ -96,7 +111,7 @@ def test_iteration_with_one_packets():
     mocked_stream = MockedStream(BytesIO(CAP_HEADER_WITH_PACKET))
     packet_capture_format_loader = PacketCaptureFormatLoader(mocked_stream)
     assert len(list(packet_capture_format_loader)) == 1
-    assert mocked_stream.read_params == [(4,), (24, ), (16, ), (9, ), (16,)]
+    assert mocked_stream.read_params == [(4,), (24,), (16,), (9,), (16,)]
     assert mocked_stream.seek_params == [(-4, 1)]
 
 
@@ -114,5 +129,5 @@ def test_iteration_with_compatibility():
             break
 
     assert len(captured_packets) == 1
-    assert mocked_stream.read_params == [(4,), (24, ), (16, ), (9, ), (16,)]
+    assert mocked_stream.read_params == [(4,), (24,), (16,), (9,), (16,)]
     assert mocked_stream.seek_params == [(-4, 1)]
