@@ -12,6 +12,8 @@ class LinkLayerTypes(Enum):
 
 class NetworkCapture(object):
     def __init__(self, captured_packets=None, link_layer_type=None):
+        if link_layer_type is None:
+            link_layer_type = LinkLayerTypes(1)
         if not isinstance(link_layer_type, LinkLayerTypes):
             link_layer_type = LinkLayerTypes(link_layer_type)
         self.link_layer_type = LinkLayerTypes(link_layer_type)
