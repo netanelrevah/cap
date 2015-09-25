@@ -7,11 +7,10 @@ from cap.nicer.slices import slice_by_size
 
 def format_byte(byte):
     return binascii.hexlify(byte[:1]).decode('ascii')
-    # return byte[:1].encode('hex')
 
 
 def format_dword(dword):
-    return ' '.join(slice_by_size(dword.encode('hex'), 2))
+    return ' '.join(slice_by_size(binascii.hexlify(dword).decode('ascii'), 2))
 
 
 def format_bytes(data):

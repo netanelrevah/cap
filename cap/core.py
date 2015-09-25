@@ -1,7 +1,7 @@
 from enum import Enum
 import binascii
 
-from cap.nicer.bits import format_byte, format_bytes
+from cap.nicer.bits import format_bytes
 from cap.nicer.times import current_datetime, datetime_from_timestamp
 
 __author__ = 'netanelrevah'
