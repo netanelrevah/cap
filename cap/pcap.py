@@ -191,10 +191,10 @@ class PacketCaptureFormat(object):
     def from_network_capture(cls, network_capture):
         file_header = PacketCaptureHeaderFormat()
         captured_packets = map(CapturedPacketFormat.init_from_captured_packet, network_capture)
-        return cls(file_header, captured_packets)
+        return cls(file_header, list(captured_packets))
 
     def to_network_capture(self):
-        captured_packets = map(CapturedPacketFormat.to_captured_packet, self.captured_packets)
+        captured_packets = list(map(CapturedPacketFormat.to_captured_packet, self.captured_packets))
         return NetworkCapture(captured_packets, self.file_header.link_layer_type)
 
     @classmethod
