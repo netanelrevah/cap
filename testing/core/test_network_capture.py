@@ -60,7 +60,7 @@ def test_index():
     randomized_length = randint(0, 40)
     mocked_captured_packet_list = range(randomized_length)
     first_network_capture = NetworkCapture(mocked_captured_packet_list)
-    randomized_index = randint(0, randomized_length)
+    randomized_index = randint(0, randomized_length - 1)
     assert first_network_capture[randomized_index] == mocked_captured_packet_list[randomized_index]
 
 

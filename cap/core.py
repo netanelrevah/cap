@@ -1,4 +1,5 @@
 from enum import Enum
+import binascii
 
 from cap.nicer.bits import format_byte, format_bytes
 from cap.nicer.times import current_datetime, datetime_from_timestamp
@@ -66,27 +67,24 @@ class CapturedPacket(object):
     def is_fully_captured(self):
         return self.original_length == len(self)
 
-    def hex_dump(self):
+    def hex_dump(self):  # pragma: no cover
         return format_bytes(self.data)
 
     def __eq__(self, other):
-        return self.data, self.original_length, self.capture_time, self.capture_time == \
-               other.data, other.original_length, other.capture_time, other.capture_time
+        return (self.data, self.original_length, self.capture_time) == \
+               (other.data, other.original_length, other.capture_time)
 
     def __str__(self):
-        return ''.join(format_byte(byte) for byte in self.data)
+        return binascii.hexlify(self.data).decode('ascii')
 
     def __len__(self):
         return len(self.data)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return '<CapturedPacket - %d bytes captured at %s >' % (len(self.data), self.capture_time)
 
     def __iter__(self):
-        return self.data.__iter__()
+        return iter(self.data)
 
     def __getitem__(self, item):
         return self.data.__getitem__(item)
-
-    def __lt__(self, other):
-        return self.capture_time < other.capture_time

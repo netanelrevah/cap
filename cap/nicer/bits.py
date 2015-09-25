@@ -1,10 +1,13 @@
+import binascii
+
 __author__ = 'netanelrevah'
 
 from cap.nicer.slices import slice_by_size
 
 
 def format_byte(byte):
-    return byte[:1].encode('hex')
+    return binascii.hexlify(byte[:1]).decode('ascii')
+    # return byte[:1].encode('hex')
 
 
 def format_dword(dword):
