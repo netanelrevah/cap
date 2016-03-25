@@ -1,6 +1,6 @@
 # Cap: lightweight package for use network captures
 
-[![Build Status](https://travis-ci.org/cap/cap.svg?branch=develop)](https://travis-ci.org/netanelrevah/cap) [![PyPI version](https://img.shields.io/pypi/v/cap.svg)](https://pypi.python.org/pypi/cap/) [![PyPI downloads](https://img.shields.io/pypi/dm/cap.svg)](https://pypi.python.org/pypi/cap/)
+[![Build Status](https://travis-ci.org/netanelrevah/cap.svg?branch=develop)](https://travis-ci.org/netanelrevah/cap) [![PyPI version](https://img.shields.io/pypi/v/cap.svg)](https://pypi.python.org/pypi/cap/) [![PyPI downloads](https://img.shields.io/pypi/dm/cap.svg)](https://pypi.python.org/pypi/cap/)
 
 The idea is to read and write capture files like it is really a serialized data. The API is ment to be close as possible to json and pickle APIs.
 
