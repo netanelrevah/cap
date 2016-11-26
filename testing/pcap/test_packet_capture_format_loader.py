@@ -1,8 +1,8 @@
 from io import BytesIO
 from random import randint
 
-from _pytest.python import fixture, raises
 import mock
+from pytest import fixture, raises
 
 from cap.pcap import PacketCaptureFormatLoader
 

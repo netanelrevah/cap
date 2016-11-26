@@ -1,10 +1,10 @@
 from random import randint
-from _pytest.python import fixture, raises
-import mock
 
-from cap.pcap import CapturedPacketFormat, CapturedPacketHeaderFormat
+from pytest import fixture, raises
+
 from cap.core import CapturedPacket
 from cap.nicer.times import current_datetime
+from cap.pcap import CapturedPacketFormat, CapturedPacketHeaderFormat
 
 __author__ = 'netanelrevah'
 
