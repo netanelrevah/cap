@@ -3,6 +3,7 @@ import binascii
 
 from cap.nicer.bits import format_bytes
 from cap.nicer.times import current_datetime, datetime_from_timestamp
+from pkt import Packet
 
 __author__ = 'netanelrevah'
 
@@ -46,9 +47,9 @@ class NetworkCapture(object):
         self.captured_packets.sort(key=key)
 
 
-class CapturedPacket(object):
+class CapturedPacket(Packet):
     def __init__(self, data, capture_time=None, original_length=None):
-        self.data = data
+        super(CapturedPacket, self).__init__(data)
 
         self.capture_time = capture_time
         if self.capture_time is None:
@@ -67,24 +68,8 @@ class CapturedPacket(object):
     def is_fully_captured(self):
         return self.original_length == len(self)
 
-    def hex_dump(self):  # pragma: no cover
-        return format_bytes(self.data)
-
-    def __eq__(self, other):
-        return (self.data, self.original_length, self.capture_time) == \
-               (other.data, other.original_length, other.capture_time)
-
-    def __str__(self):
-        return binascii.hexlify(self.data).decode('ascii')
-
-    def __len__(self):
-        return len(self.data)
-
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self):
         return '<CapturedPacket - %d bytes captured at %s >' % (len(self.data), self.capture_time)
 
-    def __iter__(self):
-        return iter(self.data)
-
-    def __getitem__(self, item):
-        return self.data.__getitem__(item)
+    def to_immutable(self):
+        return self.data, self.capture_time, self.original_length

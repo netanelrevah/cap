@@ -1,6 +1,6 @@
-from cap.core import NetworkCapture
-from cap.pcap import PacketCaptureFormat, PacketCaptureFormatLoader, PacketCaptureFormatDumper
-from cap.nicer.streams import to_stream
+from .core import NetworkCapture
+from .nicer.streams import to_stream
+from .pcap import PacketCaptureFormat, PacketCaptureFormatLoader, PacketCaptureFormatDumper
 
 __author__ = 'netanelrevah'
 
