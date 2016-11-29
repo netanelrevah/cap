@@ -7,12 +7,12 @@ with open('cap/version.py') as version_file:
     exec(version_file.read(), main_namespace)
 version = main_namespace['__version__']
 
-REQUIREMENTS = ['enum34', 'pytz']
+REQUIREMENTS = ['enum34', 'pytz', 'pkt', 'nicer']
 
 setup(
     name='cap',
     version=version,
-    packages=['cap', 'cap.nicer'],
+    packages=['cap', 'cap._nicer'],
 
     install_requires=REQUIREMENTS,
 

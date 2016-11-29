@@ -9,7 +9,7 @@ import pytz
 
 from cap.pcap import CapturedPacketHeaderFormat
 from cap.core import CapturedPacket
-from cap.nicer.times import seconds_from_datetime, current_datetime
+from cap._nicer.times import seconds_from_datetime, current_datetime
 
 MOCKED_DATA = b'SomeRandomStringOfData'
 

@@ -1,8 +1,8 @@
 import binascii
 
-__author__ = 'netanelrevah'
+from .._nicer.slices import slice_by_size
 
-from cap.nicer.slices import slice_by_size
+__author__ = 'netanelrevah'
 
 
 def format_byte(byte):

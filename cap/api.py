@@ -1,5 +1,5 @@
 from .core import NetworkCapture
-from .nicer.streams import to_stream
+from ._nicer.streams import to_stream
 from .pcap import PacketCaptureFormat, PacketCaptureFormatLoader, PacketCaptureFormatDumper
 
 __author__ = 'netanelrevah'

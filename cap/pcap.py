@@ -1,8 +1,8 @@
 from struct import Struct
 
-from cap.core import NetworkCapture, CapturedPacket
-from cap.nicer.structs import DefinedStruct
-from cap.nicer.times import datetime_from_seconds_and_microseconds, seconds_from_datetime, \
+from .core import NetworkCapture, CapturedPacket
+from ._nicer.structs import DefinedStruct
+from ._nicer.times import datetime_from_seconds_and_microseconds, seconds_from_datetime, \
     microseconds_from_datetime
 
 __author__ = 'netanelrevah'

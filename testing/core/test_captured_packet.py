@@ -1,9 +1,9 @@
-from datetime import datetime
 import binascii
+from datetime import datetime
 from random import randint
+
+from cap._nicer.times import current_datetime, datetime_from_timestamp
 from cap.core import CapturedPacket
-from cap.nicer.bits import format_byte
-from cap.nicer.times import current_datetime, datetime_from_timestamp
 
 __author__ = 'netanelrevah'
 
