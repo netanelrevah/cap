@@ -1,8 +1,5 @@
 from enum import Enum
 
-from pkt import Packet
-from ._nicer.times import current_datetime, datetime_from_timestamp
-
 __author__ = 'netanelrevah'
 
 
@@ -33,7 +30,7 @@ class NetworkCapture(object):
     def __iter__(self):
         return self.captured_packets.__iter__()
 
-    def __repr__(self):  # pragma: no cover
+    def __repr__(self):
         if len(self) == 0:
             return '<NetworkCapture - Empty>'
         return '<CaptureFile - {} packets from {} to {}>'.format(len(self), self[0].capture_time, self[-1].capture_time)
@@ -43,31 +40,3 @@ class NetworkCapture(object):
 
     def sort(self, key=lambda p: p.capture_time):
         self.captured_packets.sort(key=key)
-
-
-class CapturedPacket(Packet):
-    def __init__(self, data, capture_time=None, original_length=None):
-        super(CapturedPacket, self).__init__(data)
-
-        self.capture_time = capture_time
-        if self.capture_time is None:
-            self.capture_time = current_datetime()
-        elif isinstance(self.capture_time, int) or isinstance(self.capture_time, float):
-            self.capture_time = datetime_from_timestamp(self.capture_time)
-
-        self.original_length = original_length
-        if self.original_length is None:
-            self.original_length = len(data)
-
-    def copy(self):
-        return CapturedPacket(self.data, self.capture_time, self.original_length)
-
-    @property
-    def is_fully_captured(self):
-        return self.original_length == len(self)
-
-    def __repr__(self):
-        return '<CapturedPacket - %d bytes captured at %s >' % (len(self.data), self.capture_time)
-
-    def to_immutable(self):
-        return self.data, self.capture_time, self.original_length

@@ -1,5 +1,6 @@
 from io import BytesIO
-from cap.core import NetworkCapture, CapturedPacket, LinkLayerTypes
+from pkt.captures import CapturedPacket
+from cap.core import NetworkCapture, LinkLayerTypes
 from cap.pcap import PacketCaptureFormat, PacketCaptureHeaderFormat, CapturedPacketFormat, PacketCaptureFormatDumper, \
     PacketCaptureFormatLoader
 

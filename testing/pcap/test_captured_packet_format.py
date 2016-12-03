@@ -2,7 +2,7 @@ from random import randint
 
 from pytest import fixture, raises
 
-from cap.core import CapturedPacket
+from pkt.captures import CapturedPacket
 from cap._nicer.times import current_datetime
 from cap.pcap import CapturedPacketFormat, CapturedPacketHeaderFormat
 

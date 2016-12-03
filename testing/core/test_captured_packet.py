@@ -3,7 +3,7 @@ from datetime import datetime
 from random import randint
 
 from cap._nicer.times import current_datetime, datetime_from_timestamp
-from cap.core import CapturedPacket
+from pkt.captures import CapturedPacket
 
 __author__ = 'netanelrevah'
 

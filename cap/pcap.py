@@ -1,6 +1,7 @@
 from struct import Struct
 
-from .core import NetworkCapture, CapturedPacket
+from pkt.captures import CapturedPacket
+from .core import NetworkCapture
 from ._nicer.structs import DefinedStruct
 from ._nicer.times import datetime_from_seconds_and_microseconds, seconds_from_datetime, \
     microseconds_from_datetime

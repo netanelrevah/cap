@@ -1,15 +1,14 @@
+import struct
 from datetime import datetime
 from random import randint
-import struct
 
 import mock
-
-from _pytest.python import raises
 import pytz
+from _pytest.python import raises
 
-from cap.pcap import CapturedPacketHeaderFormat
-from cap.core import CapturedPacket
 from cap._nicer.times import seconds_from_datetime, current_datetime
+from cap.pcap import CapturedPacketHeaderFormat
+from pkt.captures import CapturedPacket
 
 MOCKED_DATA = b'SomeRandomStringOfData'
 
