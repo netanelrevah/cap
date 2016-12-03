@@ -1,4 +1,4 @@
-from .core import NetworkCapture
+from pkt.captures import NetworkCapture
 from ._nicer.streams import to_stream
 from .pcap import PacketCaptureFormat, PacketCaptureFormatLoader, PacketCaptureFormatDumper
 

@@ -1,6 +1,6 @@
 from io import BytesIO
-from pkt.captures import CapturedPacket
-from cap.core import NetworkCapture, LinkLayerTypes
+from pkt.captures import CapturedPacket, NetworkCapture
+from cap.core import LinkLayerTypes
 from cap.pcap import PacketCaptureFormat, PacketCaptureHeaderFormat, CapturedPacketFormat, PacketCaptureFormatDumper, \
     PacketCaptureFormatLoader
 
@@ -40,7 +40,7 @@ def test_to_network_capture():
     packet_capture_format.file_header.link_layer_type = LinkLayerTypes(0)
     network_capture = packet_capture_format.to_network_capture()
     assert network_capture.captured_packets == [captured_packet_format.to_captured_packet()]
-    assert network_capture.link_layer_type == LinkLayerTypes(0)
+    assert network_capture.environment == LinkLayerTypes(0)
 
 
 def test_loads():
