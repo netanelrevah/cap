@@ -5,18 +5,20 @@ env:
 - TOX_ENV=py34
 - TOX_ENV=py33
 - TOX_ENV=py27
-- TOX_ENV=py26
 install:
 - pip install tox
 script:
 - tox -e $TOX_ENV
+before_deploy:
+- chmod ugo+x ./scripts/change_version.sh
+- ./scripts/change_version.sh $TRAVIS_BUILD_NUMBER
 deploy:
   provider: pypi
   user: code-museum
   password:
     secure: JcGPPAvTrOA1BLtCaYhmKMe2gNn2NdSapdscGB8nd2s5J2O9vfSPuiQGZ/hJE1ckkgxQaIExttEV1B89RjovxZ5rAlHnkrs6hV0U9FPcKBvyHAGtK39bfeWLHkIacw1pU3od2v0G0qiFXA4/xfmQZCfamXpa6OX305HOYBSmyL8=
+  skip_cleanup: true
   on:
-    tags: true
-    distributions: sdist bdist_wheel
-    repo: netanelrevah/cap
     branch: develop
+    distributions: "sdist bdist_wheel"
+    repo: netanelrevah/cap
