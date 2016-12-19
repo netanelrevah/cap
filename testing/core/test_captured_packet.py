@@ -4,7 +4,6 @@ from random import randint
 
 import pytest
 
-from cap._nicer.times import current_datetime, datetime_from_timestamp
 from nicer.times import Timestamp
 from pkt.captures import CapturedPacket
 

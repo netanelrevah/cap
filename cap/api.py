@@ -1,7 +1,10 @@
 from io import BytesIO
 
+import io
+
 from .core import PcapNetworkCapture
 from ._nicer.streams import to_stream
+from pkt.captures import CapturedPacket
 
 __author__ = 'netanelrevah'
 
@@ -46,3 +49,11 @@ def merge(target_path, *source_paths):
     for source_path in source_paths:
         result.append(load(source_path))
     return dump_into_file(result, target_path)
+
+
+def append_to_file(target_path, captured_packet):
+    # type: (str, CapturedPacket) -> None
+    magic = PcapNetworkCapture.load_pcap_magic_from_stream(open(target_path, 'rb'))
+    target_file = open(target_path, 'ab')
+    target_file.seek(0, io.SEEK_END)
+    PcapNetworkCapture.dump_captured_packet_to_stream(captured_packet, target_file, magic.endianness)
