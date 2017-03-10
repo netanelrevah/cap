@@ -1,6 +1,7 @@
 import binascii
 from datetime import datetime
 from random import randint
+from unittest.mock import patch, Mock
 
 import pytest
 
@@ -12,19 +13,18 @@ __author__ = 'netanelrevah'
 MOCKED_DATA = b'Some Mocked Data'
 
 
-def test_initialize_with_defaults():
-    time_before = Timestamp.now()
+@patch('nicer.times.Timestamp.now')
+def test_initialize_with_default_parameters(timestamp_now):  # type: (Mock) -> None
     captured_packet = CapturedPacket(MOCKED_DATA)
-    time_after = Timestamp.now()
     assert captured_packet.data == MOCKED_DATA
-    assert time_before <= captured_packet.capture_time <= time_after
+    timestamp_now.assert_called_once_with()
     assert captured_packet.original_length == len(MOCKED_DATA)
 
 
 def test_initialize_with_values():
-    captured_packet = CapturedPacket(MOCKED_DATA, Timestamp(20, 2), len(MOCKED_DATA) + 4)
+    captured_packet = CapturedPacket(MOCKED_DATA, Timestamp(42, 6 * 9), len(MOCKED_DATA) + 4)
     assert captured_packet.data == MOCKED_DATA
-    assert captured_packet.capture_time == Timestamp(20, 2)
+    assert captured_packet.capture_time == Timestamp(42, 6 * 9)
     assert captured_packet.original_length == len(MOCKED_DATA) + 4
 
 
