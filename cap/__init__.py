@@ -17,7 +17,14 @@ from cap.core import (
 def load(stream: BinaryIO):
     endianness, seconds_parts_type = PCAP_MAGICS[stream.read(4)]
 
-    (_, _, time_zone_offset_hours, _, max_capture_length_octets, link_layer_type,) = NETWORK_CAPTURE_HEADER_STRUCTURE[
+    (
+        _,
+        _,
+        time_zone_offset_hours,
+        _,
+        max_capture_length_octets,
+        link_layer_type,
+    ) = NETWORK_CAPTURE_HEADER_STRUCTURE[
         endianness
     ].unpack(stream.read(20))
 
