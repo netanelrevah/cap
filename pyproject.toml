@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "cap"
+version = "0.1.1"
+description = "Cap: lightweight package for use network captures"
+authors = ["Netanel Revah <netanelrevah@outlook.com>"]
+license = "MIT License"
+readme = "README.md"
+packages = [
+    { include = "cap" },
+    { include = "pkt" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+bidict = "^0.22.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 120
