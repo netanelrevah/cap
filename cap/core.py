@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, IntEnum, StrEnum, auto
 from struct import Struct
@@ -44,9 +44,12 @@ CAPTURED_PACKET_HEADER_STRUCTURE = {
 @dataclass
 class CapturedPacket:
     data: bytes
-    capture_time: datetime = None
-    original_length: int = None
-    link_layer_type: LinkLayerTypes = None
+    capture_time: datetime
+    link_layer_type: LinkLayerTypes = LinkLayerTypes.ethernet
+    original_length: int | None = None
+
+    def __post_init__(self):
+        self.original_length = self.original_length or len(self.data)
 
     @property
     def is_fully_captured(self):
