@@ -281,7 +281,7 @@ testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.
 name = "ruff"
 version = "0.0.252"
 description = "An extremely fast Python linter, written in Rust."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -319,4 +319,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "c291f19558075fec82dab7c6ea39dbf24e8deaff12d60e915cfba732bd95de5f"
+content-hash = "0f93ce13e7e01730e0fae6396fa9069b5a802720686b880cbf06546809b16af5"
