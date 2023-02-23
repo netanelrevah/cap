@@ -84,7 +84,11 @@ class CapFileLoader:
 
     def _parse_file_header(self):
         self._parse_magic()
-        if self._time_zone_offset_hours is not None or self._max_capture_length_octets is not None or self._link_layer_type is not None:
+        if (
+            self._time_zone_offset_hours is not None
+            or self._max_capture_length_octets is not None
+            or self._link_layer_type is not None
+        ):
             return
         header = NETWORK_CAPTURE_HEADER_STRUCTURE[self.endianness].unpack(self.reader.read(20))
         (_, _, self._time_zone_offset_hours, _, self._max_capture_length_octets, self._link_layer_type) = header

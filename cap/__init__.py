@@ -2,15 +2,12 @@ from io import BytesIO
 from typing import BinaryIO, Sequence
 
 from cap.core import (
-    CAPTURED_PACKET_HEADER_STRUCTURE,
-    NETWORK_CAPTURE_HEADER_STRUCTURE,
-    PCAP_MAGICS,
+    CapFileDumper,
+    CapFileLoader,
     CapturedPacket,
     Endianness,
     LinkLayerTypes,
     SecondsPartsUnit,
-    CapFileLoader,
-    CapFileDumper,
 )
 
 
