@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cap"
-version = "0.1.1"
+version = "0.1.2"
 description = "Cap: lightweight package for use network captures"
 authors = ["Netanel Revah <netanelrevah@outlook.com>"]
 license = "MIT License"
