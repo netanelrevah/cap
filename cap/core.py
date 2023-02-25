@@ -71,61 +71,53 @@ class CapturedPacket:
 class CapFileLoader:
     reader: BinaryIO
 
+    _header_parsed: bool = False
     _endianness: Endianness | None = field(default=None, init=False)
     _seconds_parts_unit: SecondsPartsUnit | None = field(default=None, init=False)
     _time_zone_offset_hours: int | None = field(default=None, init=False)
     _max_capture_length_octets: int | None = field(default=None, init=False)
     _link_layer_type: LinkLayerTypes | None = field(default=None, init=False)
 
-    def _parse_magic(self):
-        if self._endianness is not None or self._seconds_parts_unit is not None:
+    def _parse_header(self):
+        if self._header_parsed:
             return
         self._endianness, self._seconds_parts_unit = PCAP_MAGICS[self.reader.read(4)]
-
-    def _parse_file_header(self):
-        self._parse_magic()
-        if (
-            self._time_zone_offset_hours is not None
-            or self._max_capture_length_octets is not None
-            or self._link_layer_type is not None
-        ):
-            return
         header = NETWORK_CAPTURE_HEADER_STRUCTURE[self.endianness].unpack(self.reader.read(20))
-        (_, _, self._time_zone_offset_hours, _, self._max_capture_length_octets, self._link_layer_type) = header
+        _, _, self._time_zone_offset_hours, _, self._max_capture_length_octets, self._link_layer_type = header
+        self._header_parsed = True
 
     @property
-    def endianness(self) -> Endianness:
-        if self._endianness is None:
-            self._parse_magic()
+    def endianness(self) -> Endianness | None:
+        if self._header_parsed is None:
+            self._parse_header()
         return self._endianness
 
     @property
-    def seconds_parts_unit(self) -> SecondsPartsUnit:
-        if self._seconds_parts_unit is None:
-            self._parse_magic()
+    def seconds_parts_unit(self) -> SecondsPartsUnit | None:
+        if self._header_parsed is None:
+            self._parse_header()
         return self._seconds_parts_unit
 
     @property
-    def time_zone_offset_hours(self) -> int:
-        if self._time_zone_offset_hours is None:
-            self._parse_file_header()
+    def time_zone_offset_hours(self) -> int | None:
+        if self._header_parsed is None:
+            self._parse_header()
         return self._time_zone_offset_hours
 
     @property
-    def max_capture_length_octets(self) -> int:
-        if self._max_capture_length_octets is None:
-            self._parse_file_header()
+    def max_capture_length_octets(self) -> int | None:
+        if self._header_parsed is None:
+            self._parse_header()
         return self._max_capture_length_octets
 
     @property
-    def link_layer_type(self) -> LinkLayerTypes:
-        if self._link_layer_type is None:
-            self._parse_file_header()
+    def link_layer_type(self) -> LinkLayerTypes | None:
+        if self._header_parsed is None:
+            self._parse_header()
         return self._link_layer_type
 
     def __iter__(self):
-        self._parse_magic()
-        self._parse_file_header()
+        self._parse_header()
         captured_packet_header_structure = CAPTURED_PACKET_HEADER_STRUCTURE[self.endianness]
 
         while self.reader:
