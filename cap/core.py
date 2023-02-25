@@ -1,7 +1,9 @@
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, IntEnum, StrEnum, auto
 from struct import Struct
+from typing import BinaryIO
 
 from bidict import bidict
 
@@ -16,7 +18,7 @@ class Endianness(StrEnum):
     little_endian = "<"
 
 
-class SecondsPartsUnit(float, Enum):
+class SecondsPartsUnit(int, Enum):
     micros = 1e6
     nanos = 1e9
 
@@ -63,3 +65,111 @@ class CapturedPacket:
 
     def __repr__(self):
         return f"<CapturedPacket - {len(self.data)} bytes captured at {self.capture_time} >"
+
+
+@dataclass
+class CapFileLoader:
+    reader: BinaryIO
+
+    _header_parsed: bool = False
+    _endianness: Endianness | None = field(default=None, init=False)
+    _seconds_parts_unit: SecondsPartsUnit | None = field(default=None, init=False)
+    _time_zone_offset_hours: int | None = field(default=None, init=False)
+    _max_capture_length_octets: int | None = field(default=None, init=False)
+    _link_layer_type: LinkLayerTypes | None = field(default=None, init=False)
+
+    def _parse_header(self):
+        if self._header_parsed:
+            return
+        self._endianness, self._seconds_parts_unit = PCAP_MAGICS[self.reader.read(4)]
+        header = NETWORK_CAPTURE_HEADER_STRUCTURE[self.endianness].unpack(self.reader.read(20))
+        _, _, self._time_zone_offset_hours, _, self._max_capture_length_octets, self._link_layer_type = header
+        self._header_parsed = True
+
+    @property
+    def endianness(self) -> Endianness | None:
+        if self._header_parsed is None:
+            self._parse_header()
+        return self._endianness
+
+    @property
+    def seconds_parts_unit(self) -> SecondsPartsUnit | None:
+        if self._header_parsed is None:
+            self._parse_header()
+        return self._seconds_parts_unit
+
+    @property
+    def time_zone_offset_hours(self) -> int | None:
+        if self._header_parsed is None:
+            self._parse_header()
+        return self._time_zone_offset_hours
+
+    @property
+    def max_capture_length_octets(self) -> int | None:
+        if self._header_parsed is None:
+            self._parse_header()
+        return self._max_capture_length_octets
+
+    @property
+    def link_layer_type(self) -> LinkLayerTypes | None:
+        if self._header_parsed is None:
+            self._parse_header()
+        return self._link_layer_type
+
+    def __iter__(self):
+        self._parse_header()
+        captured_packet_header_structure = CAPTURED_PACKET_HEADER_STRUCTURE[self.endianness]
+
+        while self.reader:
+            header = self.reader.read(16)
+            if not header:
+                break
+            seconds, seconds_parts, data_length, original_length = captured_packet_header_structure.unpack(header)
+
+            yield CapturedPacket(
+                data=self.reader.read(data_length),
+                capture_time=datetime.fromtimestamp(
+                    (float(seconds) + (seconds_parts / self.seconds_parts_unit)) - self.time_zone_offset_hours
+                ),
+                original_length=original_length,
+                link_layer_type=self.link_layer_type,
+            )
+
+
+@dataclass
+class CapFileDumper:
+    writer: BinaryIO
+
+    endianness: Endianness = Endianness.little_endian
+    seconds_parts_unit: SecondsPartsUnit = SecondsPartsUnit.micros
+    major_version: int = 2
+    minor_version: int = 4
+    time_zone_offset_hours: int = 0
+    max_capture_length_octets: int = 0x40000
+    link_layer_type: LinkLayerTypes = LinkLayerTypes.ethernet
+
+    def dump_header(self):
+        self.writer.write(PCAP_MAGICS.inverse[(self.endianness, self.seconds_parts_unit)])
+        self.writer.write(
+            NETWORK_CAPTURE_HEADER_STRUCTURE[self.endianness].pack(
+                self.major_version,
+                self.minor_version,
+                self.time_zone_offset_hours,
+                0,
+                self.max_capture_length_octets,
+                self.link_layer_type,
+            )
+        )
+
+    def dump_packet(self, captured_packet: CapturedPacket):
+        seconds_parts, seconds = math.modf(captured_packet.capture_time.timestamp() + self.time_zone_offset_hours)
+
+        self.writer.write(
+            CAPTURED_PACKET_HEADER_STRUCTURE[self.endianness].pack(
+                int(seconds),
+                int(seconds_parts * self.seconds_parts_unit),
+                len(captured_packet.data),
+                captured_packet.original_length,
+            )
+        )
+        self.writer.write(captured_packet.data)
