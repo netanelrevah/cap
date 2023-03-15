@@ -1,7 +1,7 @@
-import math
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, IntEnum, StrEnum, auto
+from functools import total_ordering
 from struct import Struct
 from typing import BinaryIO
 
@@ -43,10 +43,49 @@ CAPTURED_PACKET_HEADER_STRUCTURE = {
 }
 
 
+@total_ordering
 @dataclass
+class Timestamp:
+    seconds: int
+    seconds_parts: int
+    seconds_parts_unit: SecondsPartsUnit
+
+    def of_unit(self, new_seconds_parts_unit: SecondsPartsUnit):
+        ratio = self.seconds_parts_unit / new_seconds_parts_unit
+
+        return Timestamp(self.seconds, int(self.seconds_parts / ratio), new_seconds_parts_unit)
+
+    @classmethod
+    def from_datetime(cls, value: datetime):
+        return Timestamp(int(value.timestamp()), value.microsecond, SecondsPartsUnit.micros)
+
+    def __eq__(self, other):
+        if isinstance(other, Timestamp):
+            first = self
+            second = other
+            if self.seconds_parts_unit > other.seconds_parts_unit:
+                second = other.of_unit(self.seconds_parts_unit)
+            elif self.seconds_parts_unit < other.seconds_parts_unit:
+                first = self.of_unit(other.seconds_parts_unit)
+            return first.seconds == second.seconds and first.seconds_parts == second.seconds_parts
+        return NotImplemented
+
+    def __le__(self, other):
+        if isinstance(other, Timestamp):
+            first = self
+            second = other
+            if self.seconds_parts_unit > other.seconds_parts_unit:
+                second = other.of_unit(self.seconds_parts_unit)
+            elif self.seconds_parts_unit < other.seconds_parts_unit:
+                first = self.of_unit(other.seconds_parts_unit)
+            return first.seconds <= second.seconds and first.seconds_parts <= second.seconds_parts
+        return NotImplemented
+
+
+@dataclass(eq=True)
 class CapturedPacket:
     data: bytes
-    capture_time: datetime
+    capture_time: Timestamp
     link_layer_type: LinkLayerTypes = LinkLayerTypes.ethernet
     original_length: int | None = None
 
@@ -65,6 +104,16 @@ class CapturedPacket:
 
     def __repr__(self):
         return f"<CapturedPacket - {len(self.data)} bytes captured at {self.capture_time} >"
+
+    @classmethod
+    def from_datetime(
+        cls,
+        data: bytes,
+        capture_time: datetime,
+        link_layer_type: LinkLayerTypes = LinkLayerTypes.ethernet,
+        original_length: int | None = None,
+    ):
+        return CapturedPacket(data, Timestamp.from_datetime(capture_time), link_layer_type, original_length)
 
 
 @dataclass
@@ -128,9 +177,7 @@ class CapFileLoader:
 
             yield CapturedPacket(
                 data=self.reader.read(data_length),
-                capture_time=datetime.fromtimestamp(
-                    (float(seconds) + (seconds_parts / self.seconds_parts_unit)) - self.time_zone_offset_hours
-                ),
+                capture_time=Timestamp(seconds, seconds_parts, self.seconds_parts_unit),
                 original_length=original_length,
                 link_layer_type=self.link_layer_type,
             )
@@ -162,12 +209,12 @@ class CapFileDumper:
         )
 
     def dump_packet(self, captured_packet: CapturedPacket):
-        seconds_parts, seconds = math.modf(captured_packet.capture_time.timestamp() + self.time_zone_offset_hours)
+        capture_time = captured_packet.capture_time.of_unit(self.seconds_parts_unit)
 
         self.writer.write(
             CAPTURED_PACKET_HEADER_STRUCTURE[self.endianness].pack(
-                int(seconds),
-                int(seconds_parts * self.seconds_parts_unit),
+                capture_time.seconds + self.time_zone_offset_hours,
+                capture_time.seconds_parts,
                 len(captured_packet.data),
                 captured_packet.original_length,
             )
