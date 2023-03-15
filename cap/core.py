@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum, IntEnum, StrEnum, auto
+from enum import Enum, IntEnum, auto
 from functools import total_ordering
 from struct import Struct
 from typing import BinaryIO
@@ -13,7 +13,7 @@ class LinkLayerTypes(IntEnum):
     ethernet = auto()
 
 
-class Endianness(StrEnum):
+class Endianness(str, Enum):
     big_endian = ">"
     little_endian = "<"
 
