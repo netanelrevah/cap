@@ -7,18 +7,25 @@ from typing import BinaryIO
 
 from bidict import bidict
 
+try:
+    from enum import StrEnum
+except ImportError:
+
+    class StrEnum(str, Enum):
+        pass
+
 
 class LinkLayerTypes(IntEnum):
     none = 0
     ethernet = auto()
 
 
-class Endianness(str, Enum):
+class Endianness(StrEnum):
     big_endian = ">"
     little_endian = "<"
 
 
-class SecondsPartsUnit(int, Enum):
+class SecondsPartsUnit(IntEnum):
     micros = 1e6
     nanos = 1e9
 
@@ -33,7 +40,7 @@ PCAP_MAGICS = bidict(
 )
 
 NETWORK_CAPTURE_HEADER_STRUCTURE = {
-    Endianness.big_endian: Struct(f"{Endianness.big_endian}HHiIII"),
+    Endianness.big_endian: Struct(f"{Endianness.big_endian:}HHiIII"),
     Endianness.little_endian: Struct(f"{Endianness.little_endian}HHiIII"),
 }
 
