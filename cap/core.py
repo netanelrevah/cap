@@ -11,7 +11,7 @@ try:
     from enum import StrEnum
 except ImportError:
 
-    class StrEnum(str, Enum):
+    class StrEnum(str, Enum):  # type: ignore
         pass
 
 
