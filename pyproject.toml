@@ -1,0 +1,71 @@
+[project]
+name = "nrevah-cap"
+version = "0.2.0"
+description = "Cap: lightweight package for use network captures"
+readme = "README.md"
+authors = [
+    { name = "Netanel Revah" },
+]
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.uv.build-backend]
+module-name = "cap"
+module-root = ""
+
+[build-system]
+requires = ["uv_build>=0.8.5,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.0",
+    "pytest>=8.3.4",
+    "ruff>=0.9.6",
+    "ty>=0.0.1a7",
+]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+
+testpaths = "tests"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+lint.select = [
+    "ANN",
+    "E",
+    "F",
+    "FA",
+    "FURB",
+    "I",
+    "N",
+    "PGH",
+    "PERF",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "RUF",
+    "UP",
+    "YTT",
+    "TC",
+    "S",
+    "C",
+]
+lint.ignore = [
+    "E731",
+    "RUF009",
+    "PLR0911",
+    "PLR0912",
+    "PLR0913",
+    "PLR0915",
+    "PLW2901",
+]
+
+lint.per-file-ignores."tests/**" = ["S101", "S603"]
